@@ -1,7 +1,11 @@
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import java.io.*;
-import java.util.*;
+
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
 public class ExcelIngestion {
     // Declare final lists to hold all the objects
@@ -15,27 +19,33 @@ public class ExcelIngestion {
     final List<Location> locationList = new ArrayList<>();
 
     public List<List<String>> excelImport(String filePath) {
-        List<List<String>> data = new ArrayList<>();
-        try (FileInputStream fis = new FileInputStream(filePath)) {
-            Workbook workbook = new XSSFWorkbook(fis);
-            Sheet sheet = workbook.getSheetAt(0);  // Get the first sheet
-            Iterator<Row> rowIterator = sheet.iterator();
-            rowIterator.next(); // Skip header row
-            while (rowIterator.hasNext()) {
-                Row row = rowIterator.next();
-                List<String> rowData = new ArrayList<>();
-                for (int i = 0; i < row.getPhysicalNumberOfCells(); i++) {
-                    Cell cell = row.getCell(i);
-                    rowData.add(cell.toString());  // Add cell value as string
+    List<List<String>> data = new ArrayList<>();
+    try (FileInputStream fis = new FileInputStream(filePath)) {
+        Workbook workbook = new XSSFWorkbook(fis);
+        Sheet sheet = workbook.getSheetAt(0);  // Get the first sheet
+        Iterator<Row> rowIterator = sheet.iterator();
+        rowIterator.next(); // Skip header row
+        while (rowIterator.hasNext()) {
+            Row row = rowIterator.next();
+            List<String> rowData = new ArrayList<>();
+            for (int i = 0; i < row.getPhysicalNumberOfCells(); i++) {
+                Cell cell = row.getCell(i);
+                if (cell != null) {
+                    rowData.add(cell.toString());
+                } else {
+                    rowData.add("");  // Add empty string if cell is null
                 }
-                data.add(rowData);  // Add the row data to the list
             }
-            workbook.close();
-        } catch (IOException e) {
-            e.printStackTrace();
+            data.add(rowData);  // Add the row data to the list
+            System.out.println("Row data: " + rowData);  // Print each row for debugging
         }
-        return data;
+        workbook.close();
+    } catch (IOException e) {
+        e.printStackTrace();
     }
+    return data;
+}
+
 
     public void excelInject(List<List<String>> data) {
         for (List<String> row : data) {
@@ -144,5 +154,7 @@ public class ExcelIngestion {
         }
     }
 }
+
+
 
 
