@@ -1,21 +1,24 @@
 # IT320Project
 
-// Create the Location object
-                Location location = new Location(regionName, address, latitude, longitude, 
-                                                 distance, postcode, councilArea, propertyCount);
-                
-                if (type.equals("h")) {
-                    // Create the House object
-                    House house = new House(propertyId, landsize, location, rooms, bathroom, parkingSpot, buildingSize, yearBuilt, hasGarden, hasSwimmingPool, hasFence);
-                } else if (type.equals("u")) {
-                    // Create the Unit object
-                    Unit unit = new Unit(propertyId, landsize, location, rooms, bathroom, parkingSpot, buildingSize, yearBuilt, floorLevel, hasBalcony, hasElevator);
-                } else if (type.equals("t")) {
-                    // Create the Townhouse object
-                    Townhouse townhouse = new Townhouse(propertyId, landsize, location, rooms, bathroom, parkingSpot, buildingSize, yearBuilt, numberOfSharedWalls, numberOfLevels);
-                } else if (type.equals("dev")) {
-                    // Create the DevelopmentSite object
-                    DevelopmentSite developmentSite = new DevelopmentSite(propertyId, landsize, location, isLandCleared, underConstruction);
-                } else {
-                    System.out.println("Unknown property type: " + type);
-                }
+
+   <dependencies>
+        <!-- Apache POI Dependency for working with Excel files -->
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi-ooxml</artifactId>
+            <version>5.2.3</version> <!-- Change this to the latest version -->
+        </dependency>
+    <!-- Log4j API -->
+    <dependency>
+        <groupId>org.apache.logging.log4j</groupId>
+        <artifactId>log4j-api</artifactId>
+        <version>2.20.0</version>
+    </dependency>
+
+    <!-- Log4j Core (Implementation) -->
+    <dependency>
+        <groupId>org.apache.logging.log4j</groupId>
+        <artifactId>log4j-core</artifactId>
+        <version>2.20.0</version>
+    </dependency>
+    </dependencies>
