@@ -40,6 +40,26 @@ public class IT320Projet {
         System.out.println("Townhouses List: " + csvIngestion.townhousesList);
         System.out.println("Development Sites List: " + csvIngestion.developmentSitesList);
         System.out.println("Transactions List: " + csvIngestion.transactionsList);
+
+
+
+
+
+
+        
+        XLSIngestion xlsIngestion = new XLSIngestion();
+        String filePath = "C:\\Users\\Asma\\Desktop\\SampleDataX.xlsx"; // Replace with actual CSV file path
+        List<List<String>> data = xlsIngestion.xlsImport(filePath);
+        // Now, inject the data into the respective objects
+        xlsIngestion.xlsInject(data);
+        System.out.println("Buyers List: " + xlsIngestion.buyersList);
+        System.out.println("Agents List: " + xlsIngestion.agentsList);
+        System.out.println("Houses List: " + xlsIngestion.housesList);
+        System.out.println("Locations List: " + xlsIngestion.locationList);
+        System.out.println("Units List: " + xlsIngestion.unitsList);
+        System.out.println("Townhouses List: " + xlsIngestion.townhousesList);
+        System.out.println("Development Sites List: " + xlsIngestion.developmentSitesList);
+        System.out.println("Transactions List: " + xlsIngestion.transactionsList);
     
         
     }
