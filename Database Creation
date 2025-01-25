@@ -8,7 +8,7 @@ CREATE TABLE buyers (
     buyerId INT PRIMARY KEY,
     buyerName VARCHAR(255) NOT NULL,
     gender CHAR(1),
-    age INT
+
 );
 
 CREATE TABLE transactions (
@@ -21,10 +21,20 @@ CREATE TABLE transactions (
     date DATE,
     FOREIGN KEY (agentId) REFERENCES agents(agentId),
     FOREIGN KEY (buyerId) REFERENCES buyers(buyerId)
+    FOREIGN KEY (houseId) REFERENCES houses(propertyId),
+    FOREIGN KEY (unitId) REFERENCES units(propertyId),
+    FOREIGN KEY (townhouseId) REFERENCES townhouses(propertyId),
+    FOREIGN KEY (developmentSiteId) REFERENCES developmentSite(propertyId)
 );
-
-CREATE TABLE location (
-    locationId INT PRIMARY KEY AUTO_INCREMENT,
+CREATE TABLE houses (
+    propertyId INT PRIMARY KEY,
+    rooms INT,
+    bathroom INT,
+    landSize INT,
+    hasGarden BOOLEAN,
+    parkingSpot INT,
+    buildingSize INT,
+    yearBuilt INT,
     regionName VARCHAR(255),
     address VARCHAR(255),
     latitude DOUBLE,
@@ -33,26 +43,12 @@ CREATE TABLE location (
     postcode INT,
     councilArea VARCHAR(255),
     propertyCount INT
-);
-
-CREATE TABLE houses (
-    propertyId INT PRIMARY KEY,
-    rooms INT,
-    bathroom INT,
-    landSize INT,
-    locationId INT,
-    hasGarden BOOLEAN,
-    parkingSpot INT,
-    buildingSize INT,
-    yearBuilt INT,
     hasSwimmingPool BOOLEAN,
     hasFence BOOLEAN,
-    FOREIGN KEY (propertyId) REFERENCES property(propertyId)
 );
 
 CREATE TABLE units (
     landSize INT,
-    locationId INT,
     propertyId INT PRIMARY KEY,
     rooms INT,
     bathroom INT,
@@ -60,31 +56,49 @@ CREATE TABLE units (
     buildingSize INT,
     yearBuilt INT,
     floorLevel INT,
+    regionName VARCHAR(255),
+    address VARCHAR(255),
+    latitude DOUBLE,
+    longitude DOUBLE,
+    distance DOUBLE,
+    postcode INT,
+    councilArea VARCHAR(255),
+    propertyCount INT
     hasBalcony BOOLEAN,
     hasElevator BOOLEAN,
-
-    FOREIGN KEY (propertyId) REFERENCES property(propertyId)
 );
 
 CREATE TABLE townhouses (
     landSize INT,
-    locationId INT,
     propertyId INT PRIMARY KEY,
     rooms INT,
     bathroom INT,
     parkingSpot INT,
     buildingSize INT,
+    regionName VARCHAR(255),
+    address VARCHAR(255),
+    latitude DOUBLE,
+    longitude DOUBLE,
+    distance DOUBLE,
+    postcode INT,
+    councilArea VARCHAR(255),
+    propertyCount INT
     yearBuilt INT,
     numberOfSharedWalls INT,
     numberOfLevels INT,
-    FOREIGN KEY (propertyId) REFERENCES property(propertyId)
 );
 
 CREATE TABLE developmentSite (
     propertyId INT PRIMARY KEY,
     landSize INT,
-    locationId INT,
+    regionName VARCHAR(255),
+    address VARCHAR(255),
+    latitude DOUBLE,
+    longitude DOUBLE,
+    distance DOUBLE,
+    postcode INT,
+    councilArea VARCHAR(255),
+    propertyCount INT
     isLandCleared BOOLEAN,
     underConstruction BOOLEAN,
-    FOREIGN KEY (propertyId) REFERENCES property(propertyId)
 );
