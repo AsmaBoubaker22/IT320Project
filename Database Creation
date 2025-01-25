@@ -35,36 +35,46 @@ CREATE TABLE location (
     propertyCount INT
 );
 
-CREATE TABLE property (
+CREATE TABLE houses (
     propertyId INT PRIMARY KEY,
-    landSize INT,
-    locationId INT,
     rooms INT,
     bathroom INT,
+    landSize INT,
+    locationId INT,
+    hasGarden BOOLEAN,
     parkingSpot INT,
     buildingSize INT,
     yearBuilt INT,
-    FOREIGN KEY (locationId) REFERENCES location(locationId)
-);
-
-CREATE TABLE houses (
-    propertyId INT PRIMARY KEY,
-    hasGarden BOOLEAN,
     hasSwimmingPool BOOLEAN,
     hasFence BOOLEAN,
     FOREIGN KEY (propertyId) REFERENCES property(propertyId)
 );
 
 CREATE TABLE units (
+    landSize INT,
+    locationId INT,
     propertyId INT PRIMARY KEY,
+    rooms INT,
+    bathroom INT,
+    parkingSpot INT,
+    buildingSize INT,
+    yearBuilt INT,
     floorLevel INT,
     hasBalcony BOOLEAN,
     hasElevator BOOLEAN,
+
     FOREIGN KEY (propertyId) REFERENCES property(propertyId)
 );
 
 CREATE TABLE townhouses (
+    landSize INT,
+    locationId INT,
     propertyId INT PRIMARY KEY,
+    rooms INT,
+    bathroom INT,
+    parkingSpot INT,
+    buildingSize INT,
+    yearBuilt INT,
     numberOfSharedWalls INT,
     numberOfLevels INT,
     FOREIGN KEY (propertyId) REFERENCES property(propertyId)
@@ -72,6 +82,8 @@ CREATE TABLE townhouses (
 
 CREATE TABLE developmentSite (
     propertyId INT PRIMARY KEY,
+    landSize INT,
+    locationId INT,
     isLandCleared BOOLEAN,
     underConstruction BOOLEAN,
     FOREIGN KEY (propertyId) REFERENCES property(propertyId)
