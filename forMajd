@@ -1,37 +1,46 @@
 public void saveHousesToCSV(String filePath, List<House> houseList) {
-        try (FileWriter writer = new FileWriter(filePath)) {
-            // Write the header row
-            writer.append("propertyId,landsize,regionName,address,latitude,longitude,distance,postcode,councilArea,propertyCount,hasGarden,hasSwimmingPool,hasFence\n");
+    try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath))) {
+        // Write CSV header
+        writer.append("propertyId,landsize,regionName,address,latitude,longitude,distance,postcode,councilArea,propertyCount,");
+        writer.append("rooms,bathrooms,parkingSpot,buildingSize,yearBuilt,");
+        writer.append("hasGarden,hasSwimmingPool,hasFence\n");
 
-            // Write each house's data to the file
-            for (House house : houseList) {
-                Location location = house.getLocation(); // Get the Location object
-                
-                writer.append(String.valueOf(house.getpropertyId())).append(",");
-                writer.append(String.valueOf(house.getLandsize())).append(",");
-                
-                // Location attributes
-                writer.append(location.getRegionName()).append(",");
-                writer.append(location.getAddress()).append(",");
-                writer.append(String.valueOf(location.getLatitude())).append(",");
-                writer.append(String.valueOf(location.getLongitude())).append(",");
-                writer.append(String.valueOf(location.getDistance())).append(",");
-                writer.append(String.valueOf(location.getPostcode())).append(",");
-                writer.append(location.getCouncilArea()).append(",");
-                writer.append(String.valueOf(location.getPropertyCount())).append(",");
-                
-                // House-specific attributes
-                writer.append(String.valueOf(house.hasGarden())).append(",");
-                writer.append(String.valueOf(house.hasSwimmingPool())).append(",");
-                writer.append(String.valueOf(house.hasFence())).append("\n");
-            }
+        for (House house : houseList) {
+            Location location = house.getLocation();  // Get composite location object
 
-            System.out.println("House data has been successfully saved to " + filePath);
-        } catch (IOException e) {
-            System.out.println("Error writing to file: " + e.getMessage());
-            e.printStackTrace();
+            // Write Property attributes
+            writer.append(String.valueOf(house.getPropertyId())).append(",");
+            writer.append(String.valueOf(house.getLandsize())).append(",");
+
+            // Write Location attributes
+            writer.append(location.getRegionName()).append(",");
+            writer.append(location.getAddress()).append(",");
+            writer.append(String.valueOf(location.getLatitude())).append(",");
+            writer.append(String.valueOf(location.getLongitude())).append(",");
+            writer.append(String.valueOf(location.getDistance())).append(",");
+            writer.append(String.valueOf(location.getPostcode())).append(",");
+            writer.append(location.getCouncilArea()).append(",");
+            writer.append(String.valueOf(location.getPropertyCount())).append(",");
+
+            // Write ResidentialProperty attributes
+            writer.append(String.valueOf(house.getRooms())).append(",");
+            writer.append(String.valueOf(house.getBathrooms())).append(",");
+            writer.append(String.valueOf(house.getParkingSpot())).append(",");
+            writer.append(String.valueOf(house.getBuildingSize())).append(",");
+            writer.append(String.valueOf(house.getYearBuilt())).append(",");
+
+            // Write House-specific attributes
+            writer.append(String.valueOf(house.hasGarden())).append(",");
+            writer.append(String.valueOf(house.hasSwimmingPool())).append(",");
+            writer.append(String.valueOf(house.hasFence())).append("\n");
         }
+
+        System.out.println("House data exported successfully to " + filePath);
+    } catch (IOException e) {
+        System.err.println("Error writing to file: " + e.getMessage());
     }
+}
+
 
 MAIIIIIIIIIIINNNNNNNNNNNNNNN:-------------------------------------------------------------------------------
 ExportData exporter = new ExportData();
