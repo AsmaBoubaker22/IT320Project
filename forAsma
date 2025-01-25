@@ -9,47 +9,72 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Arrays;  // Add this import for Arrays.asList()
 
-
 public class ExportData {
-                
 
     public static <T> void saveToTXTFile(String filePath, List<T> dataList) {
-        try (FileWriter writer = new FileWriter(filePath)) {
-            if (dataList == null || dataList.isEmpty()) {
-                System.out.println("Data list is empty or null.");
-                return;
-            }
-
-            // Write the header row dynamically using the field names of the first element in the list
-            T firstItem = dataList.get(0);
-            Field[] fields = getAllFields(firstItem.getClass());
-            
-            for (Field field : fields) {
-                writer.append(field.getName()).append(",");
-            }
-            writer.append("\n");
-
-            // Write each object's data dynamically
-            for (T item : dataList) {
-                for (Field field : fields) {
-                    field.setAccessible(true); // Allow access to private fields
-                    try {
-                        // Get the value of the field and append to the CSV
-                        Object fieldValue = field.get(item);
-                        writer.append(fieldValue != null ? fieldValue.toString() : "null").append(",");
-                    } catch (IllegalAccessException e) {
-                        e.printStackTrace();
-                    }
-                }
-                writer.append("\n");
-            }
-
-            System.out.println("Data has been successfully saved to " + filePath);
-        } catch (IOException e) {
-            System.out.println("Error writing to file: " + e.getMessage());
-            e.printStackTrace();
+    try (FileWriter writer = new FileWriter(filePath)) {
+        if (dataList == null || dataList.isEmpty()) {
+            System.out.println("Data list is empty or null.");
+            return;
         }
+
+        // Write the header row dynamically, including nested Location fields separately
+        T firstItem = dataList.get(0);
+        Field[] fields = getAllFields(firstItem.getClass());
+
+        for (int i = 0; i < fields.length; i++) {
+            if (fields[i].getType().equals(Location.class)) {
+                // Add location-specific headers
+                writer.append("regionName,address,latitude,longitude,distance,postcode,councilArea,propertyCount");
+            } else {
+                writer.append(fields[i].getName());
+            }
+
+            if (i < fields.length - 1) {
+                writer.append(",");
+            }
+        }
+        writer.append("\n");
+
+        // Write each object's data dynamically
+        for (T item : dataList) {
+            for (int i = 0; i < fields.length; i++) {
+                fields[i].setAccessible(true); // Allow access to private fields
+                try {
+                    Object fieldValue = fields[i].get(item);
+
+                    if (fieldValue instanceof Location) {
+                        Location location = (Location) fieldValue;
+                        writer.append(location.getRegionName()).append(",");
+                        writer.append(location.getAddress()).append(",");
+                        writer.append(String.valueOf(location.getLatitude())).append(",");
+                        writer.append(String.valueOf(location.getLongitude())).append(",");
+                        writer.append(String.valueOf(location.getDistance())).append(",");
+                        writer.append(String.valueOf(location.getPostcode())).append(",");
+                        writer.append(location.getCouncilArea()).append(",");
+                        writer.append(String.valueOf(location.getPropertyCount()));
+                    } else {
+                        writer.append(fieldValue != null ? fieldValue.toString() : "null");
+                    }
+
+                    if (i < fields.length - 1) {
+                        writer.append(",");
+                    }
+                } catch (IllegalAccessException e) {
+                    e.printStackTrace();
+                }
+            }
+            writer.append("\n");  // New line after each row
+        }
+
+        System.out.println("Data has been successfully saved to " + filePath);
+    } catch (IOException e) {
+        System.out.println("Error writing to file: " + e.getMessage());
+        e.printStackTrace();
     }
+}
+
+
 
     // Helper method to get all fields of a class, including fields from parent classes
     private static Field[] getAllFields(Class<?> clazz) {
@@ -61,8 +86,10 @@ public class ExportData {
         }
         return allFields.toArray(new Field[0]); // Convert the list to an array
     }
-    
-    
+
+}
+
+
     
     
     
