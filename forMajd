@@ -1,0 +1,40 @@
+public void saveHousesToCSV(String filePath, List<House> houseList) {
+        try (FileWriter writer = new FileWriter(filePath)) {
+            // Write the header row
+            writer.append("propertyId,landsize,regionName,address,latitude,longitude,distance,postcode,councilArea,propertyCount,hasGarden,hasSwimmingPool,hasFence\n");
+
+            // Write each house's data to the file
+            for (House house : houseList) {
+                Location location = house.getLocation(); // Get the Location object
+                
+                writer.append(String.valueOf(house.getpropertyId())).append(",");
+                writer.append(String.valueOf(house.getLandsize())).append(",");
+                
+                // Location attributes
+                writer.append(location.getRegionName()).append(",");
+                writer.append(location.getAddress()).append(",");
+                writer.append(String.valueOf(location.getLatitude())).append(",");
+                writer.append(String.valueOf(location.getLongitude())).append(",");
+                writer.append(String.valueOf(location.getDistance())).append(",");
+                writer.append(String.valueOf(location.getPostcode())).append(",");
+                writer.append(location.getCouncilArea()).append(",");
+                writer.append(String.valueOf(location.getPropertyCount())).append(",");
+                
+                // House-specific attributes
+                writer.append(String.valueOf(house.hasGarden())).append(",");
+                writer.append(String.valueOf(house.hasSwimmingPool())).append(",");
+                writer.append(String.valueOf(house.hasFence())).append("\n");
+            }
+
+            System.out.println("House data has been successfully saved to " + filePath);
+        } catch (IOException e) {
+            System.out.println("Error writing to file: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+MAIIIIIIIIIIINNNNNNNNNNNNNNN:-------------------------------------------------------------------------------
+ExportData exporter = new ExportData();
+exporter.saveHousesToCSV("C:\\Users\\Asma\\Desktop\\houses.csv", csvIngestion.housesList);
+        
+
