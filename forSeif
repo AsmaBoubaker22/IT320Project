@@ -1,0 +1,69 @@
+package com.mycompany.oop;
+
+
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.io.*;
+import java.util.*;
+
+public class OOP {
+
+    public static void main(String[] args) {
+        
+        CSVIngestion csvIngestion = new CSVIngestion();
+        String filePath = "SampleData.csv"; 
+        List<List<String>> data = csvIngestion.csvImport(filePath);
+        
+        PropertyDataCleaner cleaner = new PropertyDataCleaner();
+        
+        cleaner.removeMissingValues(data);
+        cleaner.removeDuplicates(data);
+        cleaner.removeOutliers(data);
+        cleaner.fixYear(data);
+
+        // Now, inject the data into the respective objects
+        csvIngestion.csvInject(data);
+        
+        System.out.println("Buyers List: " + csvIngestion.buyersList);
+        System.out.println("Agents List: " + csvIngestion.agentsList);
+        System.out.println("Houses List: " + csvIngestion.housesList);
+        System.out.println("Locations List: " + csvIngestion.locationList);
+        System.out.println("Units List: " + csvIngestion.unitsList);
+        System.out.println("Townhouses List: " + csvIngestion.townhousesList);
+        System.out.println("Development Sites List: " + csvIngestion.developmentSitesList);
+        System.out.println("Transactions List: " + csvIngestion.transactionsList);
+
+
+
+
+        /*
+        
+        XLSIngestion xlsIngestion = new XLSIngestion();
+        String filePath2 = "SampleDataXLSX.xlsx"; 
+        List<List<String>> data2 = xlsIngestion.xlsImport(filePath2);
+        // Now, inject the data into the respective objects
+
+        cleaner.removeMissingValues(data2);
+        cleaner.removeDuplicates(data2);
+        cleaner.removeOutliers(data2);
+        cleaner.fixYear(data2);
+        
+        
+        xlsIngestion.xlsInject(data2);
+        
+        System.out.println("Buyers List: " + xlsIngestion.buyersList);
+        System.out.println("Agents List: " + xlsIngestion.agentsList);
+        System.out.println("Houses List: " + xlsIngestion.housesList);
+        System.out.println("Locations List: " + xlsIngestion.locationList);
+        System.out.println("Units List: " + xlsIngestion.unitsList);
+        System.out.println("Townhouses List: " + xlsIngestion.townhousesList);
+        System.out.println("Development Sites List: " + xlsIngestion.developmentSitesList);
+        System.out.println("Transactions List: " + xlsIngestion.transactionsList);*/
+    
+        
+    }
+}
+
