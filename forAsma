@@ -1,0 +1,62 @@
+public static <T> void saveToTXTFile(String filePath, List<T> dataList) {
+        try (FileWriter writer = new FileWriter(filePath)) {
+            if (dataList == null || dataList.isEmpty()) {
+                System.out.println("Data list is empty or null.");
+                return;
+            }
+
+            // Write the header row dynamically using the field names of the first element in the list
+            T firstItem = dataList.get(0);
+            Field[] fields = getAllFields(firstItem.getClass());
+            
+            for (Field field : fields) {
+                writer.append(field.getName()).append(",");
+            }
+            writer.append("\n");
+
+            // Write each object's data dynamically
+            for (T item : dataList) {
+                for (Field field : fields) {
+                    field.setAccessible(true); // Allow access to private fields
+                    try {
+                        // Get the value of the field and append to the CSV
+                        Object fieldValue = field.get(item);
+                        writer.append(fieldValue != null ? fieldValue.toString() : "null").append(",");
+                    } catch (IllegalAccessException e) {
+                        e.printStackTrace();
+                    }
+                }
+                writer.append("\n");
+            }
+
+            System.out.println("Data has been successfully saved to " + filePath);
+        } catch (IOException e) {
+            System.out.println("Error writing to file: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    // Helper method to get all fields of a class, including fields from parent classes
+    private static Field[] getAllFields(Class<?> clazz) {
+        // Start with the fields of the current class
+        List<Field> allFields = new ArrayList<>();
+        while (clazz != null) {
+            allFields.addAll(Arrays.asList(clazz.getDeclaredFields()));
+            clazz = clazz.getSuperclass(); // Move to the parent class
+        }
+        return allFields.toArray(new Field[0]); // Convert the list to an array
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+    ----------------------------------------
+            ExportData.saveToTXTFile("units.txt", csvIngestion.unitsList);
