@@ -95,3 +95,16 @@ public class ExportData {
     
 }
 
+
+
+
+
+ExportData.saveToTXTFile("C:\\Users\\Asma\\Desktop\\units.csv", csvIngestion.unitsList);
+        ExportData.saveToTXTFile("C:\\Users\\Asma\\Desktop\\agents.csv", csvIngestion.agentsList);
+        ExportData.saveToTXTFile("C:\\Users\\Asma\\Desktop\\buyers.csv", csvIngestion.buyersList);
+        ExportData.saveToTXTFile("C:\\Users\\Asma\\Desktop\\transactions.csv", csvIngestion.transactionsList);
+        ExportData.saveToTXTFile("C:\\Users\\Asma\\Desktop\\houses.csv", csvIngestion.housesList);
+        ExportData.saveToTXTFile("C:\\Users\\Asma\\Desktop\\dev.csv", csvIngestion.developmentSitesList);
+        ExportData.saveToTXTFile("C:\\Users\\Asma\\Desktop\\townhouses.csv", csvIngestion.townhousesList);
+        ExportData.saveToTXTFile("C:\\Users\\Asma\\Desktop\\locations.csv", csvIngestion.locationList);
+        
