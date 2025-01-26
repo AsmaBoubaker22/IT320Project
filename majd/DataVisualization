@@ -1,0 +1,103 @@
+package com.mycompany.oop;
+
+
+import org.jfree.chart.*;
+import org.jfree.chart.plot.*;
+import org.jfree.data.category.*;
+import javax.swing.*;
+import java.util.*;
+
+public class DataVisualization extends DataExploration {
+
+    public static void generateBarChart(String tableName, String xAxis, String yAxis) {
+        // Fetch the data for X-axis (qualitative) and Y-axis (quantitative)
+        List<Object> xAxisData = fetchColumn(tableName, xAxis);
+        List<Object> yAxisData = fetchColumn(tableName, yAxis);
+
+        // Determine if the number of unique Y-axis values is more than 4
+        Set<Object> uniqueYValues = new HashSet<>(yAxisData);
+        boolean sumYValues = uniqueYValues.size() > 5;
+
+        // Create a dataset for the bar chart
+        DefaultCategoryDataset dataset = new DefaultCategoryDataset();
+        String yAxisLabel = "Frequency";  // Default y-axis label for counting
+
+        if (sumYValues) {
+            // If there are more than 4 unique Y-axis values, sum them
+            Map<Object, Double> summedData = new HashMap<>();
+
+            // Iterate over the data and sum Y-values for each X-axis category
+            for (int i = 0; i < xAxisData.size(); i++) {
+                Object xValue = xAxisData.get(i);
+                Object yValue = yAxisData.get(i);
+
+                // Sum the Y-values for each X-axis category
+                summedData.put(xValue, summedData.getOrDefault(xValue, 0.0) + ((Number) yValue).doubleValue());
+            }
+
+            // Update the Y-axis label to reflect summation
+            yAxisLabel = "Total " + yAxis;
+
+            // Add summed data to the dataset
+            for (Map.Entry<Object, Double> entry : summedData.entrySet()) {
+                dataset.addValue(entry.getValue(), yAxis, entry.getKey().toString());
+            }
+        } else {
+            // If there are 4 or fewer unique Y-axis values, count occurrences
+            Map<Object, List<Object>> groupedData = new HashMap<>();
+            for (int i = 0; i < yAxisData.size(); i++) {
+                Object yValue = yAxisData.get(i);
+                Object xValue = xAxisData.get(i);
+
+                // Add the X-axis value to the corresponding Y-axis group
+                groupedData.computeIfAbsent(yValue, k -> new ArrayList<>()).add(xValue);
+            }
+
+            // For each Y-axis value, add the corresponding X-axis values to the dataset
+            for (Map.Entry<Object, List<Object>> entry : groupedData.entrySet()) {
+                Object yValue = entry.getKey();
+                List<Object> xValues = entry.getValue();
+
+                // Count the occurrences of each X value for this Y value
+                Map<Object, Integer> xValueCounts = new HashMap<>();
+                for (Object xValue : xValues) {
+                    xValueCounts.put(xValue, xValueCounts.getOrDefault(xValue, 0) + 1);
+                }
+
+                // Add the data to the dataset for the bar chart
+                for (Map.Entry<Object, Integer> xEntry : xValueCounts.entrySet()) {
+                    dataset.addValue(xEntry.getValue(), yValue.toString(), xEntry.getKey().toString());
+                }
+            }
+        }
+
+        // Create the chart title dynamically with the table name
+        String chartTitle = tableName + " - " + yAxis + " vs " + xAxis;
+
+        // Create the bar chart
+        JFreeChart barChart = ChartFactory.createBarChart(
+                chartTitle,       // chart title (dynamic with table name)
+                xAxis,            // x-axis label
+                yAxisLabel,       // y-axis label (updated for summation or frequency)
+                dataset,          // dataset
+                PlotOrientation.VERTICAL,
+                true,             // include legend
+                true,             // tooltips
+                false             // URLs
+        );
+
+        // Customize the chart (optional)
+        CategoryPlot plot = barChart.getCategoryPlot();
+
+        // Display the chart in a JFrame
+        JFrame chartFrame = new JFrame();
+        chartFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        ChartPanel chartPanel = new ChartPanel(barChart);
+        chartPanel.setPreferredSize(new java.awt.Dimension(800, 600)); // Set the preferred size
+        chartFrame.add(chartPanel);
+        chartFrame.pack();
+        chartFrame.setVisible(true);
+    }
+}
+
+
