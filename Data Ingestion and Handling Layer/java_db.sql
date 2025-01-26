@@ -12,14 +12,15 @@ CREATE TABLE agents (
 CREATE TABLE buyers (
     buyerId   INT PRIMARY KEY,
     buyerName VARCHAR(255),
-    gender    CHAR(1)
+    gender    CHAR(1),
+    age INT
 );
 
 CREATE TABLE houses (
     propertyId     INT PRIMARY KEY,
     rooms          INT,
-    bathroom       INT,
-    landSize       INT,
+    bathrooms      INT,
+    landsize       INT,
     hasGarden      TINYINT(1),
     parkingSpot    INT,
     buildingSize   INT,
@@ -40,9 +41,9 @@ CREATE TABLE houses (
 CREATE TABLE units (
     propertyId    INT PRIMARY KEY,   -- AUTO_INCREMENT
     rooms         INT,
-    bathroom      INT,
+    bathrooms      INT,
     parkingSpot   INT,
-    landSize      INT,
+    landsize      INT,
     buildingSize  INT,
     yearBuilt     INT,
     floorLevel    INT,
@@ -61,9 +62,9 @@ CREATE TABLE units (
 
 CREATE TABLE townhouses (
     propertyId          INT PRIMARY KEY,  -- AUTO_INCREMENT
-    landSize            INT,
+    landsize            INT,
     rooms               INT,
-    bathroom            INT,
+    bathrooms            INT,
     parkingSpot         INT,
     buildingSize        INT,
     regionName          VARCHAR(255),
@@ -82,7 +83,7 @@ CREATE TABLE townhouses (
 
 CREATE TABLE developmentSite (
     propertyId        INT PRIMARY KEY,   -- AUTO_INCREMENT
-    landSize          INT,
+    landsize          INT,
     regionName        VARCHAR(255),
     address           VARCHAR(255),
     latitude          DOUBLE,
