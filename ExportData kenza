@@ -1,0 +1,164 @@
+package com.mycompany.oop;
+
+import java.sql.*;
+import java.util.List;
+
+public class ExportData {
+
+    private static final String DB_URL = "jdbc:mysql://localhost:3306/sys_db";
+    private static final String USER = "root";
+    private static final String PASSWORD = "projetIT2025*";
+
+    // Method to export data to the database
+    public void exportToDatabase(List<Buyer> buyersList, List<Agent> agentsList, 
+                                  List<House> housesList, List<Unit> unitsList, 
+                                  List<Townhouse> townhousesList, List<DevelopmentSite> developmentSitesList,
+                                  List<Transaction> transactionsList) {
+        try (Connection connection = DriverManager.getConnection(DB_URL, USER, PASSWORD)) {
+
+            // Insert buyers
+            String buyerQuery = "INSERT INTO buyers (buyerId, buyerName, gender, age) VALUES (?, ?, ?, ?)";
+            try (PreparedStatement psBuyer = connection.prepareStatement(buyerQuery)) {
+                for (Buyer buyer : buyersList) {
+                    psBuyer.setInt(1, buyer.getBuyerId());
+                    psBuyer.setString(2, buyer.getBuyerName());
+                    psBuyer.setString(3, String.valueOf(buyer.getGender()));
+                    psBuyer.setInt(4, buyer.getAge());
+                    psBuyer.addBatch();
+                }
+                psBuyer.executeBatch();
+            }
+
+            // Insert agents
+            String agentQuery = "INSERT INTO agents (agentId, agentName) VALUES (?, ?)";
+            try (PreparedStatement psAgent = connection.prepareStatement(agentQuery)) {
+                for (Agent agent : agentsList) {
+                    psAgent.setInt(1, agent.getAgentId());
+                    psAgent.setString(2, agent.getAgentName());
+                    psAgent.addBatch();
+                }
+                psAgent.executeBatch();
+            }
+
+            // Insert properties (houses, units, townhouses, development sites)
+            insertProperties(connection, housesList, "house");
+            insertProperties(connection, unitsList, "unit");
+            insertProperties(connection, townhousesList, "townhouse");
+            insertProperties(connection, developmentSitesList, "development_site");
+
+            // Insert transactions
+            String transactionQuery = "INSERT INTO transactions (transactionId, price, method, agentId, buyerId, propertyId, date) VALUES (?, ?, ?, ?, ?, ?, ?)";
+            try (PreparedStatement psTransaction = connection.prepareStatement(transactionQuery)) {
+                for (Transaction transaction : transactionsList) {
+                    psTransaction.setInt(1, transaction.getTransactionId());
+                    psTransaction.setDouble(2, transaction.getPrice());
+                    psTransaction.setString(3, transaction.getMethod());
+                    psTransaction.setInt(4, transaction.getAgentId());
+                    psTransaction.setInt(5, transaction.getBuyerId());
+                    psTransaction.setInt(6, transaction.getPropertyIdId());
+                    psTransaction.setString(7, transaction.getDate());
+                    psTransaction.addBatch();
+                }
+                psTransaction.executeBatch();
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+private <T> void insertProperties(Connection connection, List<T> propertiesList, String propertyType) throws SQLException {
+    String insertQuery = null;
+    switch (propertyType) {
+        case "house" -> insertQuery = "INSERT INTO houses (propertyId, landsize, rooms, bathroom, parkingSpot, building_size, yearBuilt, has_garden, hasSwimmingPool, hasFence, regionName, address, latitude, longitude, distance, postcode, council_area, propertyCount) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";        
+        case "unit" -> insertQuery = "INSERT INTO units (propertyId, landsize, rooms, bathroom, parkingSpot, buildingSize, yearBuilt, floorLevel, hasBalcony, hasElevator, regionName, address, latitude, longitude, distance, postcode, councilArea, propertyCount) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";        
+        case "townhouse" -> insertQuery = "INSERT INTO townhouses (propertyId, landsize, rooms, bathroom, parkingSpot, buildingSize, yearBuilt, numberOfSharedWalls, numberOfLevels, regionName, address, latitude, longitude, distance, postcode, councilArea, propertyCount) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";        
+        case "development_site" -> insertQuery = "INSERT INTO developmentSites (propertyId, landsize, isLandCleared, underConstruction, regionName, address, latitude, longitude, distance, postcode, councilArea, propertyCount) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";        
+    }
+
+    try (PreparedStatement psProperty = connection.prepareStatement(insertQuery)) {
+        for (T property : propertiesList) {
+            if (property instanceof ResidentialProperty) {
+                ResidentialProperty residentialProperty = (ResidentialProperty) property;
+                Location location = residentialProperty.getLocation(); // Access the location of the residential property
+
+                psProperty.setInt(1, residentialProperty.getpropertyId());
+                psProperty.setInt(2, residentialProperty.getLandsize());
+
+                // Set residential property details
+                psProperty.setInt(3, residentialProperty.getRooms());
+                psProperty.setInt(4, residentialProperty.getBathrooms());
+                psProperty.setInt(5, residentialProperty.getParkingSpot());
+                psProperty.setInt(6, residentialProperty.getBuildingSize());
+                psProperty.setInt(7, residentialProperty.getYearBuilt());
+
+                // Additional details for House, Unit, Townhouse...
+                if (property instanceof House) {
+                    House house = (House) property;
+                    psProperty.setBoolean(8, house.hasGarden());
+                    psProperty.setBoolean(9, house.hasSwimmingPool());
+                    psProperty.setBoolean(10, house.hasFence());
+                psProperty.setString(11, location.getRegionName());
+                psProperty.setString(12, location.getAddress());
+                psProperty.setDouble(13, location.getLatitude());
+                psProperty.setDouble(14, location.getLongitude());
+                psProperty.setDouble(15, location.getDistance());
+                psProperty.setInt(16, location.getPostcode());
+                psProperty.setString(17, location.getCouncilArea());
+                psProperty.setInt(18, location.getPropertyCount());
+                }
+                if (property instanceof Unit) {
+                    Unit unit = (Unit) property;
+                    psProperty.setInt(8, unit.getFloorLevel());
+                psProperty.setBoolean(9, unit.hasBalcony());
+                psProperty.setBoolean(10, unit.hasElevator());
+                psProperty.setString(11, location.getRegionName());
+                psProperty.setString(12, location.getAddress());
+                psProperty.setDouble(13, location.getLatitude());
+                psProperty.setDouble(14, location.getLongitude());
+                psProperty.setDouble(15, location.getDistance());
+                psProperty.setInt(16, location.getPostcode());
+                psProperty.setString(17, location.getCouncilArea());
+                psProperty.setInt(18, location.getPropertyCount());
+                }
+                if (property instanceof Townhouse) {
+                    Townhouse townhouse = (Townhouse) property;
+                    psProperty.setInt(8, townhouse.getNumberOfSharedWalls());
+                    psProperty.setInt(9, townhouse.getNumberOfLevels());
+                    psProperty.setString(10, location.getRegionName());
+                psProperty.setString(11, location.getAddress());
+                psProperty.setDouble(12, location.getLatitude());
+                psProperty.setDouble(13, location.getLongitude());
+                psProperty.setDouble(14, location.getDistance());
+                psProperty.setInt(15, location.getPostcode());
+                psProperty.setString(16, location.getCouncilArea());
+                psProperty.setInt(17, location.getPropertyCount());
+                }
+                // Set Location details
+
+
+                psProperty.addBatch();
+            } else if (property instanceof DevelopmentSite) {
+                DevelopmentSite developmentSite = (DevelopmentSite) property;
+                Location location = developmentSite.getLocation(); // Access the location of the development site
+                psProperty.setInt(1, developmentSite.getpropertyId());
+                psProperty.setInt(2, developmentSite.getLandsize());
+                psProperty.setBoolean(3, developmentSite.isLandCleared());
+                psProperty.setBoolean(4, developmentSite.isUnderConstruction());
+
+                // Set Location details
+                psProperty.setString(5, location.getRegionName());
+                psProperty.setString(6, location.getAddress());
+                psProperty.setDouble(7, location.getLatitude());
+                psProperty.setDouble(8, location.getLongitude());
+                psProperty.setDouble(9, location.getDistance());
+                psProperty.setInt(10, location.getPostcode());
+                psProperty.setString(11, location.getCouncilArea());
+                psProperty.setInt(12, location.getPropertyCount());
+                psProperty.addBatch();
+            }
+        }
+        psProperty.executeBatch();
+    }
+}
+}
