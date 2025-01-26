@@ -8,6 +8,7 @@ CREATE TABLE buyers (
     buyerId INT PRIMARY KEY,
     buyerName VARCHAR(255) NOT NULL,
     gender CHAR(1),
+    age int
 
 );
 
