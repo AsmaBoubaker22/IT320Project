@@ -11,7 +11,8 @@ public class Correlation extends DataExploration {
     // Create and run the user interface with options to perform the tests
     public void createAndRunGUI() {
         // Sample column names (Replace with actual columns from your database)
-        String[] columnNames = {"age", "price", "rooms", "bathrooms","gender","landSize" ,"hasGarden" ,"parkingSpot" , "buildingSize"  , "regionName"  ,"distance" ,"postcode", "councilArea" ,"propertyCount" ,"hasSwimmingPool" ,"hasFence","isLandCleared","underConstruction","numberOfLevels","hasBalcony","hasElevator"};
+        String[] columnNames = {"age", "price", "rooms", "bathrooms", "gender", "landSize", "hasGarden", "parkingSpot", "buildingSize", "regionName", "distance", "postcode", "councilArea", "propertyCount", "hasSwimmingPool", "hasFence", "isLandCleared", "underConstruction", "numberOfLevels", "hasBalcony", "hasElevator"};
+        
         JFrame frame = new JFrame("Correlation Analysis");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setSize(600, 400);
@@ -85,10 +86,14 @@ public class Correlation extends DataExploration {
         if (x.size() != y.size()) {
             return "Error: Lists must be of equal length.";
         }
-        PearsonsCorrelation correlation = new PearsonsCorrelation();
-        double correlationCoefficient = correlation.correlation(x.stream().mapToDouble(Double::doubleValue).toArray(),
-                y.stream().mapToDouble(Double::doubleValue).toArray());
-        return "Pearson Correlation Coefficient: " + correlationCoefficient;
+        try {
+            PearsonsCorrelation correlation = new PearsonsCorrelation();
+            double correlationCoefficient = correlation.correlation(x.stream().mapToDouble(Double::doubleValue).toArray(),
+                    y.stream().mapToDouble(Double::doubleValue).toArray());
+            return "Pearson Correlation Coefficient: " + correlationCoefficient;
+        } catch (Exception e) {
+            return "Error performing Pearson Test: " + e.getMessage();
+        }
     }
 
     // Spearman Correlation Test (monotonic relationship between two variables)
@@ -98,10 +103,13 @@ public class Correlation extends DataExploration {
         }
 
         // Convert to rank lists and calculate Spearman's rank correlation
-        List<Double> xRanked = rankList(x);
-        List<Double> yRanked = rankList(y);
-
-        return pearsonTest(xRanked, yRanked); // Spearman is just Pearson of ranks
+        try {
+            List<Double> xRanked = rankList(x);
+            List<Double> yRanked = rankList(y);
+            return pearsonTest(xRanked, yRanked); // Spearman is just Pearson of ranks
+        } catch (Exception e) {
+            return "Error performing Spearman Test: " + e.getMessage();
+        }
     }
 
     private List<Double> rankList(List<Double> values) {
@@ -120,24 +128,28 @@ public class Correlation extends DataExploration {
             return "Error: Lists must be of equal length.";
         }
 
-        // Create the contingency table
-        long[][] contingencyTable = new long[2][2];
-        for (int i = 0; i < x.size(); i++) {
-            int row = x.get(i).equals("Yes") ? 0 : 1;
-            int col = y.get(i).equals("Yes") ? 0 : 1;
-            contingencyTable[row][col]++;
+        try {
+            // Create the contingency table
+            long[][] contingencyTable = new long[2][2];
+            for (int i = 0; i < x.size(); i++) {
+                int row = x.get(i).equals("Yes") ? 0 : 1;
+                int col = y.get(i).equals("Yes") ? 0 : 1;
+                contingencyTable[row][col]++;
+            }
+
+            // Perform Chi-Square Test
+            ChiSquareTest chiTest = new ChiSquareTest();
+            double pValue = chiTest.chiSquareTest(contingencyTable);
+
+            return "Chi-Square Test p-value: " + pValue;
+        } catch (Exception e) {
+            return "Error performing Chi-Square Test: " + e.getMessage();
         }
-
-        // Perform Chi-Square Test
-        ChiSquareTest chiTest = new ChiSquareTest();
-        double pValue = chiTest.chiSquareTest(contingencyTable);
-
-        return "Chi-Square Test p-value: " + pValue;
     }
 
     // Fetch column as Double
     private List<Double> fetchColumnAsDoubles(String columnName) {
-        // Fetch data from all relevant tables, assuming tables: "unit", "house", "townhouse"
+        // Fetch data from all relevant tables, skipping those that don't have the column
         List<Object> columnData = new ArrayList<>();
         columnData.addAll(fetchColumnFromTable("units", columnName));
         columnData.addAll(fetchColumnFromTable("houses", columnName));
@@ -149,18 +161,19 @@ public class Correlation extends DataExploration {
 
         List<Double> doubleData = new ArrayList<>();
         for (Object data : columnData) {
-            if (data instanceof Double) {
-                doubleData.add((Double) data);
-            } else if (data instanceof Integer) {
-                doubleData.add(((Integer) data).doubleValue());
+            if (data instanceof Double aDouble) {
+                doubleData.add(aDouble);
+            } else if (data instanceof Integer integer) {
+                doubleData.add(integer.doubleValue());
             }
         }
         return doubleData;
     }
+    
 
     // Fetch column as String
     private List<String> fetchColumnAsStrings(String columnName) {
-        // Fetch data from all relevant tables
+        // Fetch data from all relevant tables, skipping those that don't have the column
         List<Object> columnData = new ArrayList<>();
         columnData.addAll(fetchColumnFromTable("units", columnName));
         columnData.addAll(fetchColumnFromTable("houses", columnName));
@@ -179,15 +192,14 @@ public class Correlation extends DataExploration {
 
     // Fetch column from a specific table
     private List<Object> fetchColumnFromTable(String tableName, String columnName) {
-        return DataExploration.fetchColumn(tableName, columnName);
+        return doesColumnExist(tableName, columnName) ? fetchColumn(tableName, columnName) : new ArrayList<>();
+    }
+
+    // Check if the column exists in the table
+    private boolean doesColumnExist(String tableName, String columnName) {
+        List<Object> columnData = DataExploration.fetchColumn(tableName, columnName);
+        return columnData != null && !columnData.isEmpty();
     }
 }
 
-"main ":         Correlation correlation = new Correlation();
-        
-        // Create and run the GUI for correlation analysis
-        SwingUtilities.invokeLater(() -> {
-            correlation.createAndRunGUI();
-        });
-    }
 
