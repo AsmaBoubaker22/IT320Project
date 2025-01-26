@@ -1,1 +1,107 @@
+MAINNNNNNN CODE for DESCRIPTIVE ANALYSIS--------------------------------------------------
 
+// Create a scanner object to get user input
+        Scanner scanner = new Scanner(System.in);
+
+        // Loop until the user types STOP
+        while (true) {
+            System.out.println("\nWhich data would you like to apply descriptive statistics to?");
+            System.out.println("Choose a number corresponding to the data you want to analyze (or type 'STOP' to exit):");
+
+            // Display available columns with their numbers
+            String[] columns = {
+                "Age (buyers table)",
+                "Price (transactions table)",
+                "Rooms (houses table)",
+                "Building Size (houses table)",
+                "Bathrooms (houses table)",
+                "Landsize (houses table)",
+                "Parking Spot (houses table)",
+                "Property Count (houses table)",
+                "Rooms (units table)",
+                "Bathrooms (units table)",
+                "Parking Spot (units table)",
+                "Landsize (units table)",
+                "Building Size (units table)",
+                "Floor Level (units table)",
+                "Property Count (units table)",
+                "Landsize (townhouses table)",
+                "Rooms (townhouses table)",
+                "Bathrooms (townhouses table)",
+                "Parking Spot (townhouses table)",
+                "Building Size (townhouses table)",
+                "Number of Shared Walls (townhouses table)",
+                "Number of Levels (townhouses table)",
+                "Landsize (developmentSite table)",
+                "Property Count (developmentSite table)"
+            };
+
+            for (int i = 0; i < columns.length; i++) {
+                System.out.println((i + 1) + ". " + columns[i]);
+            }
+
+            System.out.print("\nEnter your choice (number between 1-" + columns.length + ") or type 'STOP' to exit: ");
+            
+            // Read the user's choice
+            if (scanner.hasNextInt()) {
+                int choice = scanner.nextInt();
+                scanner.nextLine(); // Consume newline
+
+                if (choice < 1 || choice > columns.length) {
+                    System.out.println("Invalid number! Please choose a number between 1 and " + columns.length + ".");
+                    continue;
+                }
+
+                // Map choices to table and column names
+                String[][] mappings = {
+                    {"buyers", "age"},
+                    {"transactions", "price"},
+                    {"houses", "rooms"},
+                    {"houses", "buildingSize"},
+                    {"houses", "bathrooms"},
+                    {"houses", "landsize"},
+                    {"houses", "parkingSpot"},
+                    {"houses", "propertyCount"},
+                    {"units", "rooms"},
+                    {"units", "bathrooms"},
+                    {"units", "parkingSpot"},
+                    {"units", "landsize"},
+                    {"units", "buildingSize"},
+                    {"units", "floorLevel"},
+                    {"units", "propertyCount"},
+                    {"townhouses", "landsize"},
+                    {"townhouses", "rooms"},
+                    {"townhouses", "bathrooms"},
+                    {"townhouses", "parkingSpot"},
+                    {"townhouses", "buildingSize"},
+                    {"townhouses", "numberOfSharedWalls"},
+                    {"townhouses", "numberOfLevels"},
+                    {"developmentSite", "landsize"},
+                    {"developmentSite", "propertyCount"}
+                };
+
+                String tableName = mappings[choice - 1][0];
+                String columnName = mappings[choice - 1][1];
+
+                System.out.println("Fetching data for column: " + columnName + " from table: " + tableName);
+
+                // Fetch the selected column data
+                List<Object> data3 = DataExploration.fetchColumn(tableName, columnName);
+
+                // Perform descriptive analysis
+                DescriptiveAnalysis analysis = new DescriptiveAnalysis();
+                analysis.displaySummary(data3, columnName);
+
+            } else {
+                String input = scanner.next();
+                if (input.equalsIgnoreCase("STOP")) {
+                    System.out.println("Exiting the program. Goodbye!");
+                    break;
+                } else {
+                    System.out.println("Invalid input! Please enter a valid number or type 'STOP' to exit.");
+                }
+                scanner.nextLine(); // Consume the invalid input
+            }
+        }
+
+        scanner.close();
