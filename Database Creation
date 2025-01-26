@@ -21,10 +21,10 @@ CREATE TABLE transactions (
     date DATE,
     FOREIGN KEY (agentId) REFERENCES agents(agentId),
     FOREIGN KEY (buyerId) REFERENCES buyers(buyerId)
-    FOREIGN KEY (houseId) REFERENCES houses(propertyId),
-    FOREIGN KEY (unitId) REFERENCES units(propertyId),
-    FOREIGN KEY (townhouseId) REFERENCES townhouses(propertyId),
-    FOREIGN KEY (developmentSiteId) REFERENCES developmentSite(propertyId)
+    FOREIGN KEY (propertyId) REFERENCES houses(propertyId),
+    FOREIGN KEY (propertyId) REFERENCES units(propertyId),
+    FOREIGN KEY (propertyId) REFERENCES townhouses(propertyId),
+    FOREIGN KEY (propertyId) REFERENCES developmentSite(propertyId)
 );
 CREATE TABLE houses (
     propertyId INT PRIMARY KEY,
