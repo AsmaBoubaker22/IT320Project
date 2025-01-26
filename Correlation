@@ -183,3 +183,11 @@ public class Correlation extends DataExploration {
     }
 }
 
+"main ":         Correlation correlation = new Correlation();
+        
+        // Create and run the GUI for correlation analysis
+        SwingUtilities.invokeLater(() -> {
+            correlation.createAndRunGUI();
+        });
+    }
+
