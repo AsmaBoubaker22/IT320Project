@@ -41,7 +41,7 @@ MAINNNNNNN CODE for DESCRIPTIVE ANALYSIS----------------------------------------
             }
 
             System.out.print("\nEnter your choice (number between 1-" + columns.length + ") or type 'STOP' to exit: ");
-            
+
             // Read the user's choice
             if (scanner.hasNextInt()) {
                 int choice = scanner.nextInt();
@@ -87,6 +87,12 @@ MAINNNNNNN CODE for DESCRIPTIVE ANALYSIS----------------------------------------
 
                 // Fetch the selected column data
                 List<Object> data3 = DataExploration.fetchColumn(tableName, columnName);
+
+                // Check if data is empty, print a message and continue
+                if (data3 == null || data3.isEmpty()) {
+                    System.out.println("No data available for " + columnName + " in the " + tableName + " table. Please choose another column.");
+                    continue;  // Skip the current iteration and ask the user to choose again
+                }
 
                 // Perform descriptive analysis
                 DescriptiveAnalysis analysis = new DescriptiveAnalysis();
