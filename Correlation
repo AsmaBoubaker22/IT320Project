@@ -1,0 +1,185 @@
+import javax.swing.*;
+import java.awt.event.*;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Collections;
+import org.apache.commons.math3.stat.correlation.PearsonsCorrelation;
+import org.apache.commons.math3.stat.inference.ChiSquareTest;
+
+public class Correlation extends DataExploration {
+
+    // Create and run the user interface with options to perform the tests
+    public void createAndRunGUI() {
+        // Sample column names (Replace with actual columns from your database)
+        String[] columnNames = {"age", "price", "rooms", "bathrooms","gender","landSize" ,"hasGarden" ,"parkingSpot" , "buildingSize"  , "regionName"  ,"distance" ,"postcode", "councilArea" ,"propertyCount" ,"hasSwimmingPool" ,"hasFence","isLandCleared","underConstruction","numberOfLevels","hasBalcony","hasElevator"};
+        JFrame frame = new JFrame("Correlation Analysis");
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setSize(600, 400);
+
+        // Create components
+        JPanel panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+
+        // Select columns for x and y
+        JLabel xLabel = new JLabel("Select Column for X:");
+        JComboBox<String> xColumnCombo = new JComboBox<>(columnNames);
+        JLabel yLabel = new JLabel("Select Column for Y:");
+        JComboBox<String> yColumnCombo = new JComboBox<>(columnNames);
+
+        // Select test type
+        JLabel testLabel = new JLabel("Select Test:");
+        String[] tests = {"Pearson Test", "Spearman Test", "Chi-Square Test"};
+        JComboBox<String> testCombo = new JComboBox<>(tests);
+
+        // Display result
+        JTextArea resultArea = new JTextArea(5, 40);
+        resultArea.setEditable(false);
+
+        // Button to execute test
+        JButton runButton = new JButton("Run Test");
+
+        runButton.addActionListener((ActionEvent e) -> {
+            // Get selected columns
+            String xColumn = (String) xColumnCombo.getSelectedItem();
+            String yColumn = (String) yColumnCombo.getSelectedItem();
+            String selectedTest = (String) testCombo.getSelectedItem();
+            
+            // Fetch data from all relevant tables
+            List<Double> xData = fetchColumnAsDoubles(xColumn);
+            List<Double> yData = fetchColumnAsDoubles(yColumn);
+            
+            String result = "";
+            
+            // Execute the selected test
+            switch (selectedTest) {
+                case "Pearson Test" -> result = pearsonTest(xData, yData);
+                case "Spearman Test" -> result = spearmanTest(xData, yData);
+                case "Chi-Square Test" -> {
+                    List<String> xCategorical = fetchColumnAsStrings(xColumn);
+                    List<String> yCategorical = fetchColumnAsStrings(yColumn);
+                    result = chiSquareTest(xCategorical, yCategorical);
+                }
+            }
+            
+            // Display the result
+            resultArea.setText(result);
+        });
+
+        // Add components to the panel
+        panel.add(xLabel);
+        panel.add(xColumnCombo);
+        panel.add(yLabel);
+        panel.add(yColumnCombo);
+        panel.add(testLabel);
+        panel.add(testCombo);
+        panel.add(runButton);
+        panel.add(new JScrollPane(resultArea));
+
+        // Setup frame and show
+        frame.add(panel);
+        frame.setVisible(true);
+    }
+
+    // Pearson Correlation Test (linear relationship between two variables)
+    private String pearsonTest(List<Double> x, List<Double> y) {
+        if (x.size() != y.size()) {
+            return "Error: Lists must be of equal length.";
+        }
+        PearsonsCorrelation correlation = new PearsonsCorrelation();
+        double correlationCoefficient = correlation.correlation(x.stream().mapToDouble(Double::doubleValue).toArray(),
+                y.stream().mapToDouble(Double::doubleValue).toArray());
+        return "Pearson Correlation Coefficient: " + correlationCoefficient;
+    }
+
+    // Spearman Correlation Test (monotonic relationship between two variables)
+    private String spearmanTest(List<Double> x, List<Double> y) {
+        if (x.size() != y.size()) {
+            return "Error: Lists must be of equal length.";
+        }
+
+        // Convert to rank lists and calculate Spearman's rank correlation
+        List<Double> xRanked = rankList(x);
+        List<Double> yRanked = rankList(y);
+
+        return pearsonTest(xRanked, yRanked); // Spearman is just Pearson of ranks
+    }
+
+    private List<Double> rankList(List<Double> values) {
+        List<Double> ranked = new ArrayList<>(values);
+        Collections.sort(ranked);
+        List<Double> ranks = new ArrayList<>();
+        for (Double value : values) {
+            ranks.add((double) (ranked.indexOf(value) + 1));
+        }
+        return ranks;
+    }
+
+    // Chi-Square Test (relationship between two categorical variables)
+    private String chiSquareTest(List<String> x, List<String> y) {
+        if (x.size() != y.size()) {
+            return "Error: Lists must be of equal length.";
+        }
+
+        // Create the contingency table
+        long[][] contingencyTable = new long[2][2];
+        for (int i = 0; i < x.size(); i++) {
+            int row = x.get(i).equals("Yes") ? 0 : 1;
+            int col = y.get(i).equals("Yes") ? 0 : 1;
+            contingencyTable[row][col]++;
+        }
+
+        // Perform Chi-Square Test
+        ChiSquareTest chiTest = new ChiSquareTest();
+        double pValue = chiTest.chiSquareTest(contingencyTable);
+
+        return "Chi-Square Test p-value: " + pValue;
+    }
+
+    // Fetch column as Double
+    private List<Double> fetchColumnAsDoubles(String columnName) {
+        // Fetch data from all relevant tables, assuming tables: "unit", "house", "townhouse"
+        List<Object> columnData = new ArrayList<>();
+        columnData.addAll(fetchColumnFromTable("units", columnName));
+        columnData.addAll(fetchColumnFromTable("houses", columnName));
+        columnData.addAll(fetchColumnFromTable("townhouses", columnName));
+        columnData.addAll(fetchColumnFromTable("agents", columnName));
+        columnData.addAll(fetchColumnFromTable("buyers", columnName));
+        columnData.addAll(fetchColumnFromTable("transactions", columnName));
+        columnData.addAll(fetchColumnFromTable("developmentsite", columnName));
+
+        List<Double> doubleData = new ArrayList<>();
+        for (Object data : columnData) {
+            if (data instanceof Double) {
+                doubleData.add((Double) data);
+            } else if (data instanceof Integer) {
+                doubleData.add(((Integer) data).doubleValue());
+            }
+        }
+        return doubleData;
+    }
+
+    // Fetch column as String
+    private List<String> fetchColumnAsStrings(String columnName) {
+        // Fetch data from all relevant tables
+        List<Object> columnData = new ArrayList<>();
+        columnData.addAll(fetchColumnFromTable("units", columnName));
+        columnData.addAll(fetchColumnFromTable("houses", columnName));
+        columnData.addAll(fetchColumnFromTable("townhouses", columnName));
+        columnData.addAll(fetchColumnFromTable("agents", columnName));
+        columnData.addAll(fetchColumnFromTable("buyers", columnName));
+        columnData.addAll(fetchColumnFromTable("transactions", columnName));
+        columnData.addAll(fetchColumnFromTable("developmentsite", columnName));
+
+        List<String> stringData = new ArrayList<>();
+        for (Object data : columnData) {
+            stringData.add(data.toString());
+        }
+        return stringData;
+    }
+
+    // Fetch column from a specific table
+    private List<Object> fetchColumnFromTable(String tableName, String columnName) {
+        return DataExploration.fetchColumn(tableName, columnName);
+    }
+}
+
