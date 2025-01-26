@@ -7,7 +7,7 @@ public class ExportData {
 
     private static final String DB_URL = "jdbc:mysql://localhost:3306/sys_db";
     private static final String USER = "root";
-    private static final String PASSWORD = "projetIT2025*";
+    private static final String PASSWORD = "****";
 
     // Method to export data to the database
     public void exportToDatabase(List<Buyer> buyersList, List<Agent> agentsList, 
