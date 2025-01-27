@@ -11,13 +11,14 @@ import java.util.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.lang.reflect.Field;
+import javax.swing.SwingUtilities;
 
 public class OOP {
 
     public static void main(String[] args) {
         
         CSVIngestion csvIngestion = new CSVIngestion();
-        
+
         String filePath = "SampleDataCSV.csv"; 
         
         List<List<String>> data = csvIngestion.csvImport(filePath);
@@ -53,6 +54,9 @@ public class OOP {
         
         // Now, inject the data into the respective objects--------------------------------------------------------------
         xlsIngestion.xlsInject(data2);
+      
+        // Create and run the GUI for correlation analysis
+        
        /* System.out.println("Buyers List: " + xlsIngestion.buyersList);
         System.out.println("Agents List: " + xlsIngestion.agentsList);
         System.out.println("Houses List: " + xlsIngestion.housesList);
@@ -181,10 +185,78 @@ public class OOP {
             // Now generate the bar chart based on the user's selection
             DataVisualization.generateBarChart(selectedTable, xAxis, yAxis);
 
-        } else {
-            System.out.println("This feature is not implemented yet. Please select option 1 for now.");
-        }
+        } 
+       
+        if (choice == 4) {  // Pie Chart option
 
+    // List of available columns for Pie Chart
+    List<String> pieChartColumns = Arrays.asList("Age", "BuildingSize", "CouncilArea", "Distance", "Gender", "HasElevator", "HasFence", "LandSize", "NumberofSharedWalls", "ParkingSpot", "Price", "rooms", "yearbuilt", "underConstruction", "isLandCleared", "bathrooms", "postcode", "hasGarden");
+
+    System.out.println("Please choose a column for the Pie Chart:");
+    for (int i = 0; i < pieChartColumns.size(); i++) {
+        System.out.println((i + 1) + " - " + pieChartColumns.get(i));
+    }
+    System.out.print("Enter the number corresponding to your choice: ");
+    int columnChoice = scanner.nextInt();
+    scanner.nextLine();
+
+    if (columnChoice < 1 || columnChoice > pieChartColumns.size()) {
+        System.out.println("Invalid choice. Exiting.");
+        return;
+    }
+
+    String selectedColumn = pieChartColumns.get(columnChoice - 1);
+
+    // List of tables to check for the selected column
+    List<String> tables = Arrays.asList("DevelopmentSite", "Houses", "Transactions", "Townhouses", "Units");
+
+
+    // Identify tables containing the selected column
+    List<String> tablesWithColumn = new ArrayList<>();
+    for (String table : tables) {
+        if (DataVisualization.doesColumnExistInTable(table, selectedColumn)) {
+            tablesWithColumn.add(table);
+        }
+    }
+
+    if (tablesWithColumn.isEmpty()) {
+        System.out.println("The selected column does not exist in any table. Exiting.");
+        return;
+    }
+
+    System.out.println("Generating Pie Charts for column: " + selectedColumn);
+    DataVisualization.generatePieChart(selectedColumn, tablesWithColumn);
+}
+     
+        if (choice == 2) {  // Scatter Plot option
+
+    // List of scatter plot options
+    System.out.println("Please choose the scatter plot variables:");
+    System.out.println("1 - Price & Landsize");
+    System.out.println("2 - Price & Distance");
+    System.out.println("3 - Price & BuildingSize");
+    System.out.print("Enter the number corresponding to your choice: ");
+    
+    int scatterChoice = scanner.nextInt();
+    scanner.nextLine(); // Consume the newline character
+
+    if (scatterChoice == 1) {
+        System.out.println("Generating Scatter Plot for Price & Landsize...");
+        DataVisualization.generateScatterPlot("price", "Landsize");
+    } else if (scatterChoice == 2) {
+        System.out.println("Generating Scatter Plot for Price & Distance...");
+        DataVisualization.generateScatterPlot("price", "Distance");
+    } else if (scatterChoice == 3) {
+        System.out.println("Generating Scatter Plot for Price & BuildingSize...");
+        DataVisualization.generateScatterPlot("price", "BuildingSize");
+    } else {
+        System.out.println("Invalid choice. Exiting.");
+        return;
+    }
+
+}
+
+        
         scanner.close();
     }
 
