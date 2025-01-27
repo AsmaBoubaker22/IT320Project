@@ -1,1 +1,17 @@
+EXPORT TO CSV ---------------------------------------------------------------------------------------------------
+
+CSVExporter.saveToTXTFile("C:\\Users\\Asma\\Desktop\\units.csv", unitsList);
+        CSVExporter.saveToTXTFile("C:\\Users\\Asma\\Desktop\\agents.csv", agentsList);
+        CSVExporter.saveToTXTFile("C:\\Users\\Asma\\Desktop\\buyers.csv", buyersList);
+        CSVExporter.saveToTXTFile("C:\\Users\\Asma\\Desktop\\transactions.csv", transactionsList);
+        CSVExporter.saveToTXTFile("C:\\Users\\Asma\\Desktop\\houses.csv", housesList);
+        CSVExporter.saveToTXTFile("C:\\Users\\Asma\\Desktop\\dev.csv", developmentSitesList);
+        CSVExporter.saveToTXTFile("C:\\Users\\Asma\\Desktop\\townhouses.csv", townhousesList);
+        CSVExporter.saveToTXTFile("C:\\Users\\Asma\\Desktop\\locations.csv", locationList);
+
+
+EXPORTTTT TO DATABASE ------------------------------------------------------------------------------------------------
+
+DatabaseExporter exporter = new DatabaseExporter("jdbc:mysql://localhost:3306/java_db", "root", "asma");
+exporter.exportData(buyersList, agentsList, housesList, unitsList, townhousesList, developmentSitesList, transactionsList);
 
