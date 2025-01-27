@@ -1,12 +1,33 @@
 package com.mycompany.oop;
+import javax.swing.JFrame;
+import javax.swing.JPanel;
+import java.awt.BorderLayout;
+import org.jfree.chart.ChartFactory;
+import org.jfree.chart.ChartPanel;
+import org.jfree.chart.JFreeChart;
+import org.jfree.data.xy.XYSeries;
+import org.jfree.data.xy.XYSeriesCollection;
 
-
+import java.util.Map;
+import java.util.HashMap;
 import org.jfree.chart.*;
 import org.jfree.chart.plot.*;
 import org.jfree.data.category.*;
 import javax.swing.*;
 import java.util.*;
-
+import org.jfree.chart.ChartFactory;
+import org.jfree.chart.ChartPanel;
+import org.jfree.chart.JFreeChart;
+import org.jfree.data.general.DefaultPieDataset;
+import java.awt.GridLayout;
+import javax.swing.*;
+import org.jfree.chart.ChartFactory;
+import org.jfree.chart.ChartPanel;
+import org.jfree.chart.JFreeChart;
+import org.jfree.data.general.DefaultPieDataset;
+import java.sql.*;
+import org.jfree.data.xy.XYSeries;
+import org.jfree.data.xy.XYSeriesCollection;
 public class DataVisualization extends DataExploration {
 
     public static void generateBarChart(String tableName, String xAxis, String yAxis) {
@@ -98,6 +119,279 @@ public class DataVisualization extends DataExploration {
         chartFrame.pack();
         chartFrame.setVisible(true);
     }
+
+    public static void generatePieChart(String columnName, List<String> tables) {
+    Map<String, Map<Object, Integer>> tableWiseCounts = new HashMap<>(); // Counts for each table
+    Map<Object, Integer> combinedCounts = new HashMap<>(); // Combined counts across all tables
+    int tableCountWithColumn = 0; // Counter for tables where the column exists
+
+    // Fetch data and compute counts for each table
+    for (String table : tables) {
+        // Check if the column exists in the table
+        if (doesColumnExistInTable(table, columnName)) {
+            tableCountWithColumn++;
+            List<Object> columnData = fetchColumn(table, columnName);
+            Map<Object, Integer> valueCounts = new HashMap<>();
+
+            // If there are more than 20 unique values, group them into ranges
+            if (columnData.size() > 20) {
+                List<Double> numericData = new ArrayList<>();
+                for (Object value : columnData) {
+                    try {
+                        // Assuming the column is numeric (e.g., price, year built)
+                        numericData.add(Double.parseDouble(value.toString()));
+                    } catch (NumberFormatException e) {
+                        // Skip non-numeric values
+                    }
+                }
+
+                // If there are numeric values, group them into ranges
+                if (!numericData.isEmpty()) {
+                    double min = Collections.min(numericData);
+                    double max = Collections.max(numericData);
+                    double rangeSize = (max - min) / 12; // Divide into a maximum of 12 ranges
+
+                    // Decide the step size (rounded up to a clean value)
+                    double step = Math.ceil(rangeSize); // Round up the step size
+
+                    // If the step is too small, adjust it to ensure a max of 12 ranges
+                    if ((max - min) / step > 12) {
+                        step = Math.ceil((max - min) / 12); // Adjust the step size to fit within 12 ranges
+                    }
+
+                    // Group values into ranges
+                    for (double value : numericData) {
+                        // Calculate the range index based on the step
+                        int rangeIndex = (int) ((value - min) / step);
+                        rangeIndex = Math.min(rangeIndex, 11); // Ensure it doesn't exceed the 12th range
+
+                        // Create a clean label for the range
+                        String rangeLabel = String.format("%.0f - %.0f", min + rangeIndex * step, min + (rangeIndex + 1) * step);
+                        valueCounts.put(rangeLabel, valueCounts.getOrDefault(rangeLabel, 0) + 1);
+                        combinedCounts.put(rangeLabel, combinedCounts.getOrDefault(rangeLabel, 0) + 1);
+                    }
+                }
+            } else {
+                // If there are fewer than 20 unique values, count them directly
+                for (Object value : columnData) {
+                    valueCounts.put(value, valueCounts.getOrDefault(value, 0) + 1);
+                    combinedCounts.put(value, combinedCounts.getOrDefault(value, 0) + 1);
+                }
+            }
+
+            tableWiseCounts.put(table, valueCounts);
+        }
+    }
+
+    // Debugging: Check if combinedCounts has data
+    System.out.println("Combined Counts: " + combinedCounts);
+
+    // Determine optimal grid layout based on the number of charts
+    int totalCharts = tableWiseCounts.size(); // Only individual charts
+    if (tableCountWithColumn > 1) {
+        totalCharts++; // Add combined chart if the column exists in multiple tables
+    }
+
+    int columns = Math.min(3, totalCharts); // Max 3 charts per row
+    int rows = (int) Math.ceil((double) totalCharts / columns);
+
+    // Create a panel to hold all charts
+    JPanel chartsPanel = new JPanel();
+    chartsPanel.setLayout(new GridLayout(rows, columns, 10, 10)); // Rows, columns, horizontal & vertical gaps
+
+    // Generate individual pie charts for each table
+    for (Map.Entry<String, Map<Object, Integer>> entry : tableWiseCounts.entrySet()) {
+        String tableName = entry.getKey();
+        Map<Object, Integer> valueCounts = entry.getValue();
+
+        // Create dataset for individual table
+        DefaultPieDataset dataset = new DefaultPieDataset();
+        int totalEntries = valueCounts.values().stream().mapToInt(Integer::intValue).sum();
+
+        for (Map.Entry<Object, Integer> valueEntry : valueCounts.entrySet()) {
+            double percentage = (valueEntry.getValue() * 100.0) / totalEntries;
+            String label = valueEntry.getKey() + " (" + String.format("%.2f", percentage) + "%, " + valueEntry.getValue() + ")";
+            dataset.setValue(label, valueEntry.getValue());
+        }
+
+        // Create pie chart for individual table
+        JFreeChart pieChart = ChartFactory.createPieChart(
+                "Pie Chart for " + columnName + " in " + tableName,
+                dataset,
+                true,
+                true,
+                false
+        );
+
+        ChartPanel chartPanel = new ChartPanel(pieChart);
+        chartPanel.setPreferredSize(new java.awt.Dimension(300, 300)); // Set preferred size for each chart
+        chartsPanel.add(chartPanel);
+    }
+
+    // Generate combined pie chart if the column exists in more than 1 table
+    if (tableCountWithColumn > 1) {
+        DefaultPieDataset combinedDataset = new DefaultPieDataset();
+
+        // Check if combinedCounts has valid data
+        if (combinedCounts.isEmpty()) {
+            System.out.println("Combined counts are empty, no data to display in combined chart.");
+        } else {
+            int totalCombinedEntries = combinedCounts.values().stream().mapToInt(Integer::intValue).sum();
+
+            // Log combined data before creating chart
+            System.out.println("Total Combined Entries: " + totalCombinedEntries);
+            for (Map.Entry<Object, Integer> entry : combinedCounts.entrySet()) {
+                double percentage = (entry.getValue() * 100.0) / totalCombinedEntries;
+                String label = entry.getKey() + " (" + String.format("%.2f", percentage) + "%, " + entry.getValue() + ")";
+                combinedDataset.setValue(label, entry.getValue());
+            }
+
+            JFreeChart combinedPieChart = ChartFactory.createPieChart(
+                    "Combined Pie Chart for " + columnName,
+                    combinedDataset,
+                    true,
+                    true,
+                    false
+            );
+
+            ChartPanel combinedChartPanel = new ChartPanel(combinedPieChart);
+            combinedChartPanel.setPreferredSize(new java.awt.Dimension(300, 300)); // Set preferred size for combined chart
+            chartsPanel.add(combinedChartPanel);
+        }
+    }
+
+    // Create a single JFrame to display all charts
+    JFrame chartFrame = new JFrame("Pie Charts for " + columnName);
+    chartFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+    chartFrame.add(new JScrollPane(chartsPanel)); // Add scrollable chartsPanel
+    chartFrame.setSize(1000, 800); // Window size
+    chartFrame.setVisible(true);
 }
+
+public static void generateScatterPlot(String xAxis, String yAxis) {
+    // Fetch data for all scatter plots
+    List<Object> priceData = fetchColumn("Transactions", xAxis);  // x-axis corresponds to price
+    List<Object> transactionPropertyIds = fetchColumn("Transactions", "propertyId");
+
+    // Define the property types (Houses, Units, Townhouses)
+    List<String> tables = Arrays.asList("Houses", "Units", "Townhouses");
+
+    // Create lists to hold the data for each plot
+    List<Double> housePrices = new ArrayList<>();
+    List<Double> houseYAxisValues = new ArrayList<>();
+    List<Double> unitPrices = new ArrayList<>();
+    List<Double> unitYAxisValues = new ArrayList<>();
+    List<Double> townhousePrices = new ArrayList<>();
+    List<Double> townhouseYAxisValues = new ArrayList<>();
+    List<Double> combinedPrices = new ArrayList<>();
+    List<Double> combinedYAxisValues = new ArrayList<>();
+
+    // Loop through each table (Houses, Units, Townhouses)
+    for (String table : tables) {
+        // Lists to hold the matching data points for each property type
+        List<Double> matchedPrices = new ArrayList<>();
+        List<Double> matchedYAxisValues = new ArrayList<>();  // This will store LandSize, Distance, etc.
+
+        // Fetch y-axis column (LandSize, Distance, etc.) for the current table
+        List<Object> yAxisColumnData = fetchColumn(table, yAxis);  // y-axis corresponds to LandSize/Distance
+        // Fetch propertyId from the current table
+        List<Object> propertyIdsFromTable = fetchColumn(table, "propertyId");
+
+        // Loop through propertyIds in Transactions and match with propertyIds in current table
+        for (int i = 0; i < transactionPropertyIds.size(); i++) {
+            Object transactionPropertyId = transactionPropertyIds.get(i);
+
+            // If the propertyId matches, add the corresponding data to the lists
+            if (propertyIdsFromTable.contains(transactionPropertyId)) {
+                int index = propertyIdsFromTable.indexOf(transactionPropertyId);
+
+                // Add corresponding price from Transactions
+                if (priceData.get(i) instanceof Double) {
+                    matchedPrices.add((Double) priceData.get(i));  // Add corresponding price
+                }
+
+                // Add corresponding y-axis data (LandSize, Distance, etc.)
+                Object yValue = yAxisColumnData.get(index);
+                
+                // Convert y-axis value to Double if it's not already
+                if (yValue instanceof Number) {
+                    matchedYAxisValues.add(((Number) yValue).doubleValue());  // Convert Integer/Double to Double
+                }
+            }
+        }
+
+        // Add data to specific lists based on property type
+        if (table.equals("Houses")) {
+            housePrices.addAll(matchedPrices);
+            houseYAxisValues.addAll(matchedYAxisValues);
+        } else if (table.equals("Units")) {
+            unitPrices.addAll(matchedPrices);
+            unitYAxisValues.addAll(matchedYAxisValues);
+        } else if (table.equals("Townhouses")) {
+            townhousePrices.addAll(matchedPrices);
+            townhouseYAxisValues.addAll(matchedYAxisValues);
+        }
+
+        // Combine the matched data into the global lists for the combined plot
+        combinedPrices.addAll(matchedPrices);
+        combinedYAxisValues.addAll(matchedYAxisValues);
+    }
+
+    // Now create the four scatter plots and display them in the same window
+    XYSeriesCollection datasetHouse = createScatterDataset(housePrices, houseYAxisValues, "Houses - Price vs " + yAxis);
+    XYSeriesCollection datasetUnit = createScatterDataset(unitPrices, unitYAxisValues, "Units - Price vs " + yAxis);
+    XYSeriesCollection datasetTownhouse = createScatterDataset(townhousePrices, townhouseYAxisValues, "Townhouses - Price vs " + yAxis);
+    XYSeriesCollection datasetCombined = createScatterDataset(combinedPrices, combinedYAxisValues, "Combined - Price vs " + yAxis);
+
+    // Create the scatter plot panels
+    JFreeChart chartHouse = createChart(datasetHouse, "Houses - Price vs " + yAxis);
+    JFreeChart chartUnit = createChart(datasetUnit, "Units - Price vs " + yAxis);
+    JFreeChart chartTownhouse = createChart(datasetTownhouse, "Townhouses - Price vs " + yAxis);
+    JFreeChart chartCombined = createChart(datasetCombined, "Combined - Price vs " + yAxis);
+
+    // Create the main frame with GridLayout
+    JFrame frame = new JFrame("Scatter Plots");
+    frame.setLayout(new GridLayout(2, 2));  // 2x2 grid layout for 4 plots
+    frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+    // Add the charts to the frame
+    frame.add(new ChartPanel(chartHouse));
+    frame.add(new ChartPanel(chartUnit));
+    frame.add(new ChartPanel(chartTownhouse));
+    frame.add(new ChartPanel(chartCombined));
+
+    // Pack and display the frame
+    frame.pack();
+    frame.setVisible(true);
+}
+
+private static XYSeriesCollection createScatterDataset(List<Double> prices, List<Double> yAxisValues, String seriesName) {
+    XYSeriesCollection dataset = new XYSeriesCollection();
+    XYSeries series = new XYSeries(seriesName);
+    for (int i = 0; i < prices.size(); i++) {
+        series.add(yAxisValues.get(i), prices.get(i));  // Add (x, y) points
+    }
+    dataset.addSeries(series);
+    return dataset;
+}
+
+private static JFreeChart createChart(XYSeriesCollection dataset, String title) {
+    return ChartFactory.createScatterPlot(
+            title,  // Chart title
+            "Land Size / Distance",  // x-axis label
+            "Price",  // y-axis label
+            dataset,  // Dataset
+            PlotOrientation.VERTICAL,
+            true,  // Include legend
+            true,  // Tooltips
+            false  // URLs
+    );
+}
+
+
+
+}
+
+
 
 
