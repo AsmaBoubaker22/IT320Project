@@ -1,220 +1,217 @@
 package com.mycompany.oop;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
-import java.awt.BorderLayout;
-import org.jfree.chart.ChartFactory;
-import org.jfree.chart.ChartPanel;
-import org.jfree.chart.JFreeChart;
-import org.jfree.data.xy.XYSeries;
-import org.jfree.data.xy.XYSeriesCollection;
-
 import java.util.Map;
 import java.util.HashMap;
-import org.jfree.chart.*;
 import org.jfree.chart.plot.*;
 import org.jfree.data.category.*;
 import javax.swing.*;
 import java.util.*;
-import org.jfree.chart.ChartFactory;
-import org.jfree.chart.ChartPanel;
-import org.jfree.chart.JFreeChart;
-import org.jfree.data.general.DefaultPieDataset;
 import java.awt.GridLayout;
-import javax.swing.*;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
 import org.jfree.data.general.DefaultPieDataset;
-import java.sql.*;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
+import org.jfree.chart.renderer.category.BarRenderer;
+import org.jfree.chart.labels.StandardCategoryItemLabelGenerator;
 public class DataVisualization extends DataExploration {
 
-    public static void generateBarChart(String tableName, String xAxis, String yAxis) {
-        // Fetch the data for X-axis (qualitative) and Y-axis (quantitative)
-        List<Object> xAxisData = fetchColumn(tableName, xAxis);
-        List<Object> yAxisData = fetchColumn(tableName, yAxis);
 
-        // Determine if the number of unique Y-axis values is more than 4
-        Set<Object> uniqueYValues = new HashSet<>(yAxisData);
-        boolean sumYValues = uniqueYValues.size() > 5;
+public static void generateBarChart(String tableName, String xAxis, String yAxis) {
+    // Fetch the data for X-axis (qualitative) and Y-axis (quantitative)
+    List<Object> xAxisData = fetchColumn(tableName, xAxis);
+    List<Object> yAxisData = fetchColumn(tableName, yAxis);
 
-        // Create a dataset for the bar chart
+    // Get unique values for X and Y axes
+    Set<Object> uniqueXValues = new LinkedHashSet<>(xAxisData);
+    Set<Object> uniqueYValues = new LinkedHashSet<>(yAxisData);
+
+    // Check the number of unique values for Y-axis
+    boolean yAxisHasFourOrLess = uniqueYValues.size() <= 4;
+
+    // If Y-axis has more than 4 unique values, divide them into 3 ranges
+    List<String> yAxisRanges = new ArrayList<>();
+    if (!yAxisHasFourOrLess) {
+        List<Integer> yValues = uniqueYValues.stream().map(v -> Integer.parseInt(v.toString())).sorted().toList();
+        int min = yValues.get(0);
+        int max = yValues.get(yValues.size() - 1);
+        int rangeSize = (int) Math.ceil((max - min + 1) / 5.0);
+
+        for (int i = 0; i < 5; i++) {
+            int rangeStart = min + i * rangeSize;
+            int rangeEnd = Math.min(rangeStart + rangeSize - 1, max);
+
+            // Check if the range contains only one element
+            if (rangeStart == rangeEnd) {
+                yAxisRanges.add(String.valueOf(rangeStart)); // Just the element itself
+            } else {
+                yAxisRanges.add(rangeStart + "-" + rangeEnd); // Regular range format
+            }
+        }
+    }
+
+    // If X-axis has more than 8 unique values, split them into 2 mini-charts
+    List<List<Object>> xAxisChunks = new ArrayList<>();
+    List<Object> chunk = new ArrayList<>();
+    for (Object xValue : uniqueXValues) {
+        chunk.add(xValue);
+        if (chunk.size() == 8) {
+            xAxisChunks.add(new ArrayList<>(chunk));
+            chunk.clear();
+        }
+    }
+    if (!chunk.isEmpty()) xAxisChunks.add(chunk); // Add any remaining X-axis values
+
+    // Create and display the charts
+    JFrame mainFrame = new JFrame(tableName + " - " + yAxis + " || " + xAxis);
+    mainFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+    mainFrame.setLayout(new GridLayout(0, 1)); // Arrange mini charts vertically
+
+    for (List<Object> xChunk : xAxisChunks) {
         DefaultCategoryDataset dataset = new DefaultCategoryDataset();
-        String yAxisLabel = "Frequency";  // Default y-axis label for counting
 
-        if (sumYValues) {
-            // If there are more than 4 unique Y-axis values, sum them
-            Map<Object, Double> summedData = new HashMap<>();
-
-            // Iterate over the data and sum Y-values for each X-axis category
+        for (Object xValue : xChunk) {
+            Map<Object, Integer> yValueCounts = new LinkedHashMap<>();
             for (int i = 0; i < xAxisData.size(); i++) {
-                Object xValue = xAxisData.get(i);
-                Object yValue = yAxisData.get(i);
+                if (xAxisData.get(i).equals(xValue)) {
+                    Object yValue = yAxisData.get(i);
 
-                // Sum the Y-values for each X-axis category
-                summedData.put(xValue, summedData.getOrDefault(xValue, 0.0) + ((Number) yValue).doubleValue());
-            }
-
-            // Update the Y-axis label to reflect summation
-            yAxisLabel = "Total " + yAxis;
-
-            // Add summed data to the dataset
-            for (Map.Entry<Object, Double> entry : summedData.entrySet()) {
-                dataset.addValue(entry.getValue(), yAxis, entry.getKey().toString());
-            }
-        } else {
-            // If there are 4 or fewer unique Y-axis values, count occurrences
-            Map<Object, List<Object>> groupedData = new HashMap<>();
-            for (int i = 0; i < yAxisData.size(); i++) {
-                Object yValue = yAxisData.get(i);
-                Object xValue = xAxisData.get(i);
-
-                // Add the X-axis value to the corresponding Y-axis group
-                groupedData.computeIfAbsent(yValue, k -> new ArrayList<>()).add(xValue);
-            }
-
-            // For each Y-axis value, add the corresponding X-axis values to the dataset
-            for (Map.Entry<Object, List<Object>> entry : groupedData.entrySet()) {
-                Object yValue = entry.getKey();
-                List<Object> xValues = entry.getValue();
-
-                // Count the occurrences of each X value for this Y value
-                Map<Object, Integer> xValueCounts = new HashMap<>();
-                for (Object xValue : xValues) {
-                    xValueCounts.put(xValue, xValueCounts.getOrDefault(xValue, 0) + 1);
+                    if (yAxisHasFourOrLess) {
+                        // Directly group by unique Y-axis values
+                        yValueCounts.put(yValue, yValueCounts.getOrDefault(yValue, 0) + 1);
+                    } else {
+                        // Group Y-axis values into ranges
+                        int y = Integer.parseInt(yValue.toString());
+                        for (String range : yAxisRanges) {
+                            String[] bounds = range.split("-");
+                            if (bounds.length == 1) {
+                                // Handle single value range (e.g., "5" instead of "5-5")
+                                int rangeValue = Integer.parseInt(bounds[0]);
+                                if (y == rangeValue) {
+                                    yValueCounts.put(range, yValueCounts.getOrDefault(range, 0) + 1);
+                                    break;
+                                }
+                            } else {
+                                // Handle regular range
+                                int rangeStart = Integer.parseInt(bounds[0]);
+                                int rangeEnd = Integer.parseInt(bounds[1]);
+                                if (y >= rangeStart && y <= rangeEnd) {
+                                    yValueCounts.put(range, yValueCounts.getOrDefault(range, 0) + 1);
+                                    break;
+                                }
+                            }
+                        }
+                    }
                 }
+            }
 
-                // Add the data to the dataset for the bar chart
-                for (Map.Entry<Object, Integer> xEntry : xValueCounts.entrySet()) {
-                    dataset.addValue(xEntry.getValue(), yValue.toString(), xEntry.getKey().toString());
-                }
+            // Add data to the dataset
+            for (Map.Entry<Object, Integer> entry : yValueCounts.entrySet()) {
+                dataset.addValue(entry.getValue(), entry.getKey().toString(), xValue.toString());
             }
         }
 
-        // Create the chart title dynamically with the table name
-        String chartTitle = tableName + " - " + yAxis + " vs " + xAxis;
-
         // Create the bar chart
         JFreeChart barChart = ChartFactory.createBarChart(
-                chartTitle,       // chart title (dynamic with table name)
-                xAxis,            // x-axis label
-                yAxisLabel,       // y-axis label (updated for summation or frequency)
-                dataset,          // dataset
-                PlotOrientation.VERTICAL,
-                true,             // include legend
-                true,             // tooltips
-                false             // URLs
+                tableName + " - " + yAxis + " || " + xAxis, // Title
+                xAxis, // X-axis label
+                "Frequency", // Y-axis label
+                dataset, // Dataset
+                PlotOrientation.VERTICAL, // Orientation
+                true, // Include legend
+                true, // Tooltips
+                false // URLs
         );
 
-        // Customize the chart (optional)
+        // Display bar values on top of each bar
         CategoryPlot plot = barChart.getCategoryPlot();
+        BarRenderer renderer = (BarRenderer) plot.getRenderer();
+        renderer.setDefaultItemLabelGenerator(new StandardCategoryItemLabelGenerator());
+        renderer.setDefaultItemLabelsVisible(true);
 
-        // Display the chart in a JFrame
-        JFrame chartFrame = new JFrame();
-        chartFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        // Add the chart to the main frame
         ChartPanel chartPanel = new ChartPanel(barChart);
-        chartPanel.setPreferredSize(new java.awt.Dimension(800, 600)); // Set the preferred size
-        chartFrame.add(chartPanel);
-        chartFrame.pack();
-        chartFrame.setVisible(true);
+        chartPanel.setPreferredSize(new java.awt.Dimension(800, 400));
+        mainFrame.add(chartPanel);
     }
 
-    public static void generatePieChart(String columnName, List<String> tables) {
-    Map<String, Map<Object, Integer>> tableWiseCounts = new HashMap<>(); // Counts for each table
-    Map<Object, Integer> combinedCounts = new HashMap<>(); // Combined counts across all tables
-    int tableCountWithColumn = 0; // Counter for tables where the column exists
+    mainFrame.pack();
+    mainFrame.setVisible(true);
+}
 
-    // Fetch data and compute counts for each table
+
+
+
+public static void generatePieChart(String columnName, List<String> tables) {
+    Map<String, Map<String, Integer>> tableWiseCounts = new HashMap<>();
+    Map<String, Integer> combinedCounts = new HashMap<>();
+    int tableCountWithColumn = 0;
+
+    // Iterate through tables to fetch column data and compute counts
     for (String table : tables) {
-        // Check if the column exists in the table
         if (doesColumnExistInTable(table, columnName)) {
             tableCountWithColumn++;
             List<Object> columnData = fetchColumn(table, columnName);
-            Map<Object, Integer> valueCounts = new HashMap<>();
 
-            // If there are more than 20 unique values, group them into ranges
-            if (columnData.size() > 20) {
-                List<Double> numericData = new ArrayList<>();
-                for (Object value : columnData) {
-                    try {
-                        // Assuming the column is numeric (e.g., price, year built)
-                        numericData.add(Double.parseDouble(value.toString()));
-                    } catch (NumberFormatException e) {
-                        // Skip non-numeric values
-                    }
+            if (columnData.isEmpty()) {
+                continue;
+            }
+
+            // Sort the values in ascending order
+            columnData.sort((o1, o2) -> ((Comparable<Object>) o1).compareTo(o2));
+
+            Map<String, Integer> valueCounts = new HashMap<>();
+            
+            // Define ranges: Create 12 ranges (or change based on your needs)
+            int totalValues = columnData.size();
+            int rangeSize = totalValues / 12;  // Number of ranges (12 here, you can adjust this)
+            int remainder = totalValues % 12;  // Handle any remainder
+
+            int startIdx = 0;
+            for (int i = 0; i < 12; i++) {
+                int endIdx = startIdx + rangeSize + (i < remainder ? 1 : 0) - 1;  // Adjust for remainder
+                if (i == 11) {
+                    endIdx = totalValues - 1; // Ensure last range contains all remaining values
                 }
 
-                // If there are numeric values, group them into ranges
-                if (!numericData.isEmpty()) {
-                    double min = Collections.min(numericData);
-                    double max = Collections.max(numericData);
-                    double rangeSize = (max - min) / 12; // Divide into a maximum of 12 ranges
-
-                    // Decide the step size (rounded up to a clean value)
-                    double step = Math.ceil(rangeSize); // Round up the step size
-
-                    // If the step is too small, adjust it to ensure a max of 12 ranges
-                    if ((max - min) / step > 12) {
-                        step = Math.ceil((max - min) / 12); // Adjust the step size to fit within 12 ranges
-                    }
-
-                    // Group values into ranges
-                    for (double value : numericData) {
-                        // Calculate the range index based on the step
-                        int rangeIndex = (int) ((value - min) / step);
-                        rangeIndex = Math.min(rangeIndex, 11); // Ensure it doesn't exceed the 12th range
-
-                        // Create a clean label for the range
-                        String rangeLabel = String.format("%.0f - %.0f", min + rangeIndex * step, min + (rangeIndex + 1) * step);
-                        valueCounts.put(rangeLabel, valueCounts.getOrDefault(rangeLabel, 0) + 1);
-                        combinedCounts.put(rangeLabel, combinedCounts.getOrDefault(rangeLabel, 0) + 1);
-                    }
+                List<Object> range = columnData.subList(startIdx, endIdx + 1);
+                String rangeLabel = range.get(0) + " - " + range.get(range.size() - 1);  // Label based on lowest and highest value in the range
+                
+                // Count how many rows fall in each range
+                for (Object value : range) {
+                    valueCounts.put(rangeLabel, valueCounts.getOrDefault(rangeLabel, 0) + 1);
+                    combinedCounts.put(rangeLabel, combinedCounts.getOrDefault(rangeLabel, 0) + 1);
                 }
-            } else {
-                // If there are fewer than 20 unique values, count them directly
-                for (Object value : columnData) {
-                    valueCounts.put(value, valueCounts.getOrDefault(value, 0) + 1);
-                    combinedCounts.put(value, combinedCounts.getOrDefault(value, 0) + 1);
-                }
+
+                startIdx = endIdx + 1;  // Move the starting index for the next range
             }
 
             tableWiseCounts.put(table, valueCounts);
         }
     }
 
-    // Debugging: Check if combinedCounts has data
-    System.out.println("Combined Counts: " + combinedCounts);
-
-    // Determine optimal grid layout based on the number of charts
-    int totalCharts = tableWiseCounts.size(); // Only individual charts
-    if (tableCountWithColumn > 1) {
-        totalCharts++; // Add combined chart if the column exists in multiple tables
-    }
-
-    int columns = Math.min(3, totalCharts); // Max 3 charts per row
-    int rows = (int) Math.ceil((double) totalCharts / columns);
-
-    // Create a panel to hold all charts
+    // Create pie charts
     JPanel chartsPanel = new JPanel();
-    chartsPanel.setLayout(new GridLayout(rows, columns, 10, 10)); // Rows, columns, horizontal & vertical gaps
+    chartsPanel.setLayout(new GridLayout(2, 2)); // Example layout, adjust as needed
 
-    // Generate individual pie charts for each table
-    for (Map.Entry<String, Map<Object, Integer>> entry : tableWiseCounts.entrySet()) {
+    // Generate pie charts for each table
+    for (Map.Entry<String, Map<String, Integer>> entry : tableWiseCounts.entrySet()) {
         String tableName = entry.getKey();
-        Map<Object, Integer> valueCounts = entry.getValue();
+        Map<String, Integer> valueCounts = entry.getValue();
 
-        // Create dataset for individual table
         DefaultPieDataset dataset = new DefaultPieDataset();
         int totalEntries = valueCounts.values().stream().mapToInt(Integer::intValue).sum();
 
-        for (Map.Entry<Object, Integer> valueEntry : valueCounts.entrySet()) {
+        // Add value counts to the dataset
+        for (Map.Entry<String, Integer> valueEntry : valueCounts.entrySet()) {
             double percentage = (valueEntry.getValue() * 100.0) / totalEntries;
             String label = valueEntry.getKey() + " (" + String.format("%.2f", percentage) + "%, " + valueEntry.getValue() + ")";
             dataset.setValue(label, valueEntry.getValue());
         }
 
-        // Create pie chart for individual table
+        // Create a pie chart for the table
         JFreeChart pieChart = ChartFactory.createPieChart(
                 "Pie Chart for " + columnName + " in " + tableName,
                 dataset,
@@ -224,49 +221,50 @@ public class DataVisualization extends DataExploration {
         );
 
         ChartPanel chartPanel = new ChartPanel(pieChart);
-        chartPanel.setPreferredSize(new java.awt.Dimension(300, 300)); // Set preferred size for each chart
+        chartPanel.setPreferredSize(new java.awt.Dimension(300, 300)); 
         chartsPanel.add(chartPanel);
     }
 
-    // Generate combined pie chart if the column exists in more than 1 table
+    // Create combined chart
     if (tableCountWithColumn > 1) {
         DefaultPieDataset combinedDataset = new DefaultPieDataset();
 
-        // Check if combinedCounts has valid data
-        if (combinedCounts.isEmpty()) {
-            System.out.println("Combined counts are empty, no data to display in combined chart.");
-        } else {
-            int totalCombinedEntries = combinedCounts.values().stream().mapToInt(Integer::intValue).sum();
+        int totalCombinedEntries = combinedCounts.values().stream().mapToInt(Integer::intValue).sum();
 
-            // Log combined data before creating chart
-            System.out.println("Total Combined Entries: " + totalCombinedEntries);
-            for (Map.Entry<Object, Integer> entry : combinedCounts.entrySet()) {
-                double percentage = (entry.getValue() * 100.0) / totalCombinedEntries;
-                String label = entry.getKey() + " (" + String.format("%.2f", percentage) + "%, " + entry.getValue() + ")";
-                combinedDataset.setValue(label, entry.getValue());
-            }
-
-            JFreeChart combinedPieChart = ChartFactory.createPieChart(
-                    "Combined Pie Chart for " + columnName,
-                    combinedDataset,
-                    true,
-                    true,
-                    false
-            );
-
-            ChartPanel combinedChartPanel = new ChartPanel(combinedPieChart);
-            combinedChartPanel.setPreferredSize(new java.awt.Dimension(300, 300)); // Set preferred size for combined chart
-            chartsPanel.add(combinedChartPanel);
+        // Add combined data to the pie chart
+        for (Map.Entry<String, Integer> entry : combinedCounts.entrySet()) {
+            double percentage = (entry.getValue() * 100.0) / totalCombinedEntries;
+            String label = entry.getKey() + " (" + String.format("%.2f", percentage) + "%, " + entry.getValue() + ")";
+            combinedDataset.setValue(label, entry.getValue());
         }
+
+        JFreeChart combinedPieChart = ChartFactory.createPieChart(
+                "Combined Pie Chart for " + columnName,
+                combinedDataset,
+                true,
+                true,
+                false
+        );
+
+        ChartPanel combinedChartPanel = new ChartPanel(combinedPieChart);
+        combinedChartPanel.setPreferredSize(new java.awt.Dimension(300, 300));
+        chartsPanel.add(combinedChartPanel);
     }
 
-    // Create a single JFrame to display all charts
-    JFrame chartFrame = new JFrame("Pie Charts for " + columnName);
-    chartFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-    chartFrame.add(new JScrollPane(chartsPanel)); // Add scrollable chartsPanel
-    chartFrame.setSize(1000, 800); // Window size
-    chartFrame.setVisible(true);
+    // Show the charts
+    SwingUtilities.invokeLater(() -> {
+        JFrame chartFrame = new JFrame("Pie Charts for " + columnName);
+        chartFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        chartFrame.add(new JScrollPane(chartsPanel));
+        chartFrame.setSize(1000, 800);
+        chartFrame.setVisible(true);
+    });
 }
+
+
+
+
+
 
 public static void generateScatterPlot(String xAxis, String yAxis) {
     // Fetch data for all scatter plots
@@ -338,10 +336,10 @@ public static void generateScatterPlot(String xAxis, String yAxis) {
     }
 
     // Now create the four scatter plots and display them in the same window
-    XYSeriesCollection datasetHouse = createScatterDataset(housePrices, houseYAxisValues, "Houses - Price vs " + yAxis);
-    XYSeriesCollection datasetUnit = createScatterDataset(unitPrices, unitYAxisValues, "Units - Price vs " + yAxis);
-    XYSeriesCollection datasetTownhouse = createScatterDataset(townhousePrices, townhouseYAxisValues, "Townhouses - Price vs " + yAxis);
-    XYSeriesCollection datasetCombined = createScatterDataset(combinedPrices, combinedYAxisValues, "Combined - Price vs " + yAxis);
+    XYSeriesCollection datasetHouse = createScatterDataset(housePrices, houseYAxisValues, "Houses - Price || " + yAxis);
+    XYSeriesCollection datasetUnit = createScatterDataset(unitPrices, unitYAxisValues, "Units - Price || " + yAxis);
+    XYSeriesCollection datasetTownhouse = createScatterDataset(townhousePrices, townhouseYAxisValues, "Townhouses - Price || " + yAxis);
+    XYSeriesCollection datasetCombined = createScatterDataset(combinedPrices, combinedYAxisValues, "Combined - Price || " + yAxis);
 
     // Create the scatter plot panels
     JFreeChart chartHouse = createChart(datasetHouse, "Houses - Price vs " + yAxis);
@@ -378,7 +376,7 @@ private static XYSeriesCollection createScatterDataset(List<Double> prices, List
 private static JFreeChart createChart(XYSeriesCollection dataset, String title) {
     return ChartFactory.createScatterPlot(
             title,  // Chart title
-            "Land Size / Distance",  // x-axis label
+            "",  // x-axis label
             "Price",  // y-axis label
             dataset,  // Dataset
             PlotOrientation.VERTICAL,
