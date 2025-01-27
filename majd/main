@@ -17,57 +17,63 @@ public class OOP {
 
     public static void main(String[] args) {
         
-        CSVIngestion csvIngestion = new CSVIngestion();
-
+    /*    CSVIngestion csvIngestion = new CSVIngestion();
         String filePath = "SampleDataCSV.csv"; 
         
         List<List<String>> data = csvIngestion.csvImport(filePath);
-        
         PropertyDataCleaner cleaner = new PropertyDataCleaner();
+        
+        int numberOfRows = data.size();
+        System.out.println("Number of rows (lists) in data: " + numberOfRows);
         
         cleaner.removeMissingValues(data);
         cleaner.removeDuplicates(data);
         cleaner.removeOutliers(data);
         cleaner.fixYear(data);
         
+        
+        System.out.println("Number of rows (lists) in data: " + numberOfRows);
+
+
         // Now, inject the data into the respective objects CSV--------------------------------------------------------------
         csvIngestion.csvInject(data);
       
-     /*   System.out.println("Buyers List: " + csvIngestion.buyersList);
+        System.out.println("Buyers List: " + csvIngestion.buyersList);
         System.out.println("Agents List: " + csvIngestion.agentsList);
         System.out.println("Houses List: " + csvIngestion.housesList);
         System.out.println("Locations List: " + csvIngestion.locationList);
         System.out.println("Units List: " + csvIngestion.unitsList);
         System.out.println("Townhouses List: " + csvIngestion.townhousesList);
         System.out.println("Development Sites List: " + csvIngestion.developmentSitesList);
-        System.out.println("Transactions List: " + csvIngestion.transactionsList);*/
+        System.out.println("Transactions List: " + csvIngestion.transactionsList);
         
         
         XLSIngestion xlsIngestion = new XLSIngestion();
         String filePath2 = "SampleDataXLSX.xlsx"; 
         List<List<String>> data2 = xlsIngestion.xlsImport(filePath2);
-        
+        int numberOfRows2 = data2.size();
+        System.out.println("Number of rows (lists) in data: " + numberOfRows2);
         cleaner.removeMissingValues(data2);
         cleaner.removeDuplicates(data2);
         cleaner.removeOutliers(data2);
         cleaner.fixYear(data2);
-        
+        System.out.println("Number of rows (lists) in data: " + numberOfRows2);
+
         // Now, inject the data into the respective objects--------------------------------------------------------------
-        xlsIngestion.xlsInject(data2);
+        xlsIngestion.xlsInject(data2); 
       
-        // Create and run the GUI for correlation analysis
         
-       /* System.out.println("Buyers List: " + xlsIngestion.buyersList);
+       System.out.println("Buyers List: " + xlsIngestion.buyersList);
         System.out.println("Agents List: " + xlsIngestion.agentsList);
         System.out.println("Houses List: " + xlsIngestion.housesList);
         System.out.println("Locations List: " + xlsIngestion.locationList);
         System.out.println("Units List: " + xlsIngestion.unitsList);
         System.out.println("Townhouses List: " + xlsIngestion.townhousesList);
         System.out.println("Development Sites List: " + xlsIngestion.developmentSitesList);
-        System.out.println("Transactions List: " + xlsIngestion.transactionsList);*/
+        System.out.println("Transactions List: " + xlsIngestion.transactionsList);
         
         // Combine the lists from both CSV and XLS into a unified list for each type---------------------------
-      /*  List<Buyer> buyersList = new ArrayList<>();
+        List<Buyer> buyersList = new ArrayList<>();
         buyersList.addAll(csvIngestion.buyersList);
         buyersList.addAll(xlsIngestion.buyersList);
 
@@ -97,9 +103,9 @@ public class OOP {
 
         List<Transaction> transactionsList = new ArrayList<>();
         transactionsList.addAll(csvIngestion.transactionsList);
-        transactionsList.addAll(xlsIngestion.transactionsList);*/
+        transactionsList.addAll(xlsIngestion.transactionsList);
+         System.out.println(transactionsList.size());
         
-        /*
         CSVExporter.saveToTXTFile("C:\\Users\\Asma\\Desktop\\units.csv", unitsList);
         CSVExporter.saveToTXTFile("C:\\Users\\Asma\\Desktop\\agents.csv", agentsList);
         CSVExporter.saveToTXTFile("C:\\Users\\Asma\\Desktop\\buyers.csv", buyersList);
@@ -108,16 +114,16 @@ public class OOP {
         CSVExporter.saveToTXTFile("C:\\Users\\Asma\\Desktop\\dev.csv", developmentSitesList);
         CSVExporter.saveToTXTFile("C:\\Users\\Asma\\Desktop\\townhouses.csv", townhousesList);
         CSVExporter.saveToTXTFile("C:\\Users\\Asma\\Desktop\\locations.csv", locationList);
-*/
+
         
         // EXPORT TO DATABASE ---------------------------------------------------------------------------------
-      /*  ExportData exporter = new ExportData("jdbc:mysql://localhost:3306/java_db", "root", "123456");
-        exporter.exportData(buyersList, agentsList, housesList, unitsList, townhousesList, developmentSitesList, transactionsList);*/
-        
+        ExportData exporter = new ExportData("jdbc:mysql://localhost:3306/java_db", "root", "123456");
+        exporter.exportData(buyersList, agentsList, housesList, unitsList, townhousesList, developmentSitesList, transactionsList);
+        */
        Scanner scanner = new Scanner(System.in);
 
         System.out.println("Select the type of chart you want to generate:");
-        System.out.println("1 - Bar Chart\n2 - Scatter Plot\n3 - Line Chart\n4 - Pie Chart");
+        System.out.println("1 - Bar Chart\n2 - Scatter Plot \n3 - Pie Chart");
         System.out.print("Enter your choice: ");
 
         int choice = scanner.nextInt();
@@ -187,7 +193,7 @@ public class OOP {
 
         } 
        
-        if (choice == 4) {  // Pie Chart option
+        if (choice == 3) {  // Pie Chart option
 
     // List of available columns for Pie Chart
     List<String> pieChartColumns = Arrays.asList("Age", "BuildingSize", "CouncilArea", "Distance", "Gender", "HasElevator", "HasFence", "LandSize", "NumberofSharedWalls", "ParkingSpot", "Price", "rooms", "yearbuilt", "underConstruction", "isLandCleared", "bathrooms", "postcode", "hasGarden");
@@ -208,7 +214,7 @@ public class OOP {
     String selectedColumn = pieChartColumns.get(columnChoice - 1);
 
     // List of tables to check for the selected column
-    List<String> tables = Arrays.asList("DevelopmentSite", "Houses", "Transactions", "Townhouses", "Units");
+    List<String> tables = Arrays.asList("DevelopmentSite", "Houses", "Transactions", "Townhouses", "Units","Buyers");
 
 
     // Identify tables containing the selected column
