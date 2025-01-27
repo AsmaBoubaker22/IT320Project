@@ -1,7 +1,11 @@
-this is the knn class : import java.util.*;
+this is the knn class : 
+import java.util.*;
 import java.util.stream.Collectors;
+import javax.swing.JTextField;
 
 public class KNN {
+    private JTextField priceField;
+    private JTextField landSizeField;
     
     // Method to classify region based on price using k-NN
     public static String classifyRegionBasedOnPrice(List<double[]> trainingData, List<String> labels, double[] testData, int k) {
@@ -254,46 +258,69 @@ public class KNN {
 
 IN THE MAIN CLASS : 
 
-Scanner scanner = new Scanner(System.in);
+ // Create the main frame
+        JFrame frame = new JFrame("KNN Classifier");
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setSize(400, 300);
 
-// Classify region based on price
-System.out.println("Enter the price of the property to classify region:");
-double price = scanner.nextDouble();
+        // Create components
+        priceField = new JTextField(15);
+        landSizeField = new JTextField(15);
+        knnButton = new JButton("Classify");
 
-// Fetch the training data for region classification
-Map<String, Object> regionData = KNN.fetchRegionTrainingData();
-List<double[]> regionTrainingData = (List<double[]>) regionData.get("trainingData");
-List<String> regionLabels = (List<String>) regionData.get("labels");
+        // Set layout for the frame
+        JPanel panel = new JPanel();
+        panel.setLayout(new FlowLayout());
+        panel.add(new JLabel("Price:"));
+        panel.add(priceField);
+        panel.add(new JLabel("Land Size:"));
+        panel.add(landSizeField);
+        panel.add(knnButton);
 
-// Classify region based on price using k-NN
-double[] priceTestData = {price};  // Using price as the only feature
-System.out.println("Classified region: " + KNN.classifyRegionBasedOnPrice(regionTrainingData, regionLabels, priceTestData, 3));
+        frame.add(panel);
 
-// Classify property type based on land size
-System.out.println("Enter the land size of the property to classify property type:");
-double landSizePropertyType = scanner.nextDouble(); // Renamed to avoid conflict
+        // Action listener for the button
+        knnButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                // Collect user inputs from the fields
+                double price = Double.parseDouble(priceField.getText());
+                double landSize = Double.parseDouble(landSizeField.getText());
 
-// Fetch the training data for property type classification based on land size
-Map<String, Object> propertyTypeData = KNN.fetchPropertyTypeTrainingData();
-List<double[]> propertyTypeTrainingData = (List<double[]>) propertyTypeData.get("trainingData");
-List<String> propertyTypeLabels = (List<String>) propertyTypeData.get("labels");
+                // Create the test data (in this case, just price and land size)
+                double[] testData = new double[]{price, landSize};
 
-// Classify property type based on land size using k-NN
-double[] landSizePropertyTypeTestData = {landSizePropertyType};  // Using land size as the only feature
-System.out.println("Classified property type: " + KNN.classifyPropertyType(propertyTypeTrainingData, propertyTypeLabels, landSizePropertyTypeTestData, 3));
+                // Fetch the training data for region classification based on price
+                Map<String, Object> regionData = KNN.fetchRegionTrainingData();
+                List<double[]> regionTrainingData = (List<double[]>) regionData.get("trainingData");
+                List<String> regionLabels = (List<String>) regionData.get("labels");
 
-// Classify distance based on land size
-System.out.println("Enter the land size of the property to classify distance:");
-double landSizeDistance = scanner.nextDouble(); // Renamed to avoid conflict
+                // Classify the region based on the price
+                String region = KNN.classifyRegionBasedOnPrice(regionTrainingData, regionLabels, testData, 20);
 
-// Fetch the training data for distance classification based on land size
-Map<String, Object> distanceData = KNN.fetchDistanceTrainingData();
-List<double[]> distanceTrainingData = (List<double[]>) distanceData.get("trainingData");
-List<String> distanceLabels = (List<String>) distanceData.get("labels");
+                // Fetch the training data for property type classification based on land size
+                Map<String, Object> propertyData = KNN.fetchPropertyTypeTrainingData();
+                List<double[]> propertyTrainingData = (List<double[]>) propertyData.get("trainingData");
+                List<String> propertyLabels = (List<String>) propertyData.get("labels");
 
-// Classify distance based on land size using k-NN
-double[] landSizeDistanceTestData = {landSizeDistance};  // Using land size as the only feature
-System.out.println("Classified distance: " + KNN.classifyDistanceBasedOnLandSize(distanceTrainingData, distanceLabels, landSizeDistanceTestData, 3));
+                // Classify the property type based on the land size
+                String propertyType = KNN.classifyPropertyType(propertyTrainingData, propertyLabels, testData, 20);
 
-scanner.close();
-    }}
+                // Fetch the training data for distance classification based on land size
+                Map<String, Object> distanceData = KNN.fetchDistanceTrainingData();
+                List<double[]> distanceTrainingData = (List<double[]>) distanceData.get("trainingData");
+                List<String> distanceLabels = (List<String>) distanceData.get("labels");
+
+                // Classify the distance based on the land size
+                String distance = KNN.classifyDistanceBasedOnLandSize(distanceTrainingData, distanceLabels, testData, 20);
+
+                // Display the results
+                JOptionPane.showMessageDialog(frame,
+                        "Classified Region: " + region + "\nClassified Property Type: " + propertyType + "\nClassified Distance: " + distance);
+            }
+        });
+
+        // Make the frame visible
+        frame.setVisible(true);
+    }
+}
