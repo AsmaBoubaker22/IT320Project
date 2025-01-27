@@ -1,0 +1,299 @@
+this is the knn class : import java.util.*;
+import java.util.stream.Collectors;
+
+public class KNN {
+    
+    // Method to classify region based on price using k-NN
+    public static String classifyRegionBasedOnPrice(List<double[]> trainingData, List<String> labels, double[] testData, int k) {
+        // Calculate distances based on price (the first feature)
+        List<Double> distances = new ArrayList<>();
+        for (double[] trainPoint : trainingData) {
+            distances.add(Math.abs(trainPoint[0] - testData[0]));  // Only use price (first feature)
+        }
+
+        // Sort the distances and find the k nearest neighbors
+        List<Integer> nearestIndices = distances.stream()
+                .sorted()
+                .limit(k)
+                .map(distances::indexOf)
+                .collect(Collectors.toList());
+
+        // Get the labels of the nearest neighbors
+        List<String> nearestLabels = nearestIndices.stream()
+                .map(labels::get)
+                .collect(Collectors.toList());
+
+        // Count the frequency of each label
+        Map<String, Long> labelCounts = nearestLabels.stream()
+                .collect(Collectors.groupingBy(label -> label, Collectors.counting()));
+
+        // Return the label with the highest frequency
+        return Collections.max(labelCounts.entrySet(), Map.Entry.comparingByValue()).getKey();
+    }
+
+    // Method to classify property type based on land size using k-NN
+    public static String classifyPropertyType(List<double[]> trainingData, List<String> labels, double[] testData, int k) {
+        // Calculate distances based on land size (the first feature)
+        List<Double> distances = new ArrayList<>();
+        for (double[] trainPoint : trainingData) {
+            distances.add(Math.abs(trainPoint[0] - testData[0]));  // Only use land size (first feature)
+        }
+
+        // Sort the distances and find the k nearest neighbors
+        List<Integer> nearestIndices = distances.stream()
+                .sorted()
+                .limit(k)
+                .map(distances::indexOf)
+                .collect(Collectors.toList());
+
+        // Get the labels of the nearest neighbors
+        List<String> nearestLabels = nearestIndices.stream()
+                .map(labels::get)
+                .collect(Collectors.toList());
+
+        // Count the frequency of each label
+        Map<String, Long> labelCounts = nearestLabels.stream()
+                .collect(Collectors.groupingBy(label -> label, Collectors.counting()));
+
+        // Return the label with the highest frequency
+        return Collections.max(labelCounts.entrySet(), Map.Entry.comparingByValue()).getKey();
+    }
+
+    // Method to fetch the training data for region classification (based on price)
+    public static Map<String, Object> fetchRegionTrainingData() {
+        List<Object> transactionPrices = DataExploration.fetchColumn("transactions", "price");
+
+        // Fetch regionNames from different property tables
+        List<Object> houseRegions = DataExploration.fetchColumn("houses", "regionName");
+        List<Object> unitRegions = DataExploration.fetchColumn("units", "regionName");
+        List<Object> townhouseRegions = DataExploration.fetchColumn("townhouses", "regionName");
+
+        // Combine prices and regions
+        List<double[]> trainingData = new ArrayList<>();
+        List<String> labels = new ArrayList<>();
+
+        // Add training data for each property type (houses, units, etc.)
+        addTrainingData(transactionPrices, houseRegions, trainingData, labels);
+        addTrainingData(transactionPrices, unitRegions, trainingData, labels);
+        addTrainingData(transactionPrices, townhouseRegions, trainingData, labels);
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("trainingData", trainingData);
+        result.put("labels", labels);
+        return result;
+    }
+
+    // Method to fetch training data for property type classification (based on land size)
+    public static Map<String, Object> fetchPropertyTypeTrainingData() {
+        List<Object> transactionPrices = DataExploration.fetchColumn("transactions", "price");
+
+        // Fetch property features (land size) from the tables (units, houses, townhouses)
+        List<Object> houseLandSizes = fetchLandSize("houses");
+        List<Object> unitLandSizes = fetchLandSize("units");
+        List<Object> townhouseLandSizes = fetchLandSize("townhouses");
+
+        // Combine land sizes and property type labels
+        List<double[]> trainingData = new ArrayList<>();
+        List<String> labels = new ArrayList<>();
+
+        // Add training data for each property type
+        addTrainingDataForLandSize(transactionPrices, houseLandSizes, "houses", trainingData, labels);
+        addTrainingDataForLandSize(transactionPrices, unitLandSizes, "units", trainingData, labels);
+        addTrainingDataForLandSize(transactionPrices, townhouseLandSizes, "townhouses", trainingData, labels);
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("trainingData", trainingData);
+        result.put("labels", labels);
+        return result;
+    }
+
+    // Method to add training data for region classification (based on price)
+    private static void addTrainingData(List<Object> prices, List<Object> regions, List<double[]> trainingData, List<String> labels) {
+        for (int i = 0; i < prices.size() && i < regions.size(); i++) {
+            try {
+                double price = Double.parseDouble(prices.get(i).toString());
+                String region = regions.get(i).toString();
+
+                // Add the price as a feature for training data, and region as label
+                trainingData.add(new double[]{price});
+                labels.add(region);
+            } catch (Exception e) {
+                System.err.println("Error parsing row: " + e.getMessage());
+            }
+        }
+    }
+
+    // Method to add training data for property type classification (based on land size)
+    private static void addTrainingDataForLandSize(List<Object> prices, List<Object> landSizes, String propertyType, List<double[]> trainingData, List<String> labels) {
+        for (int i = 0; i < prices.size() && i < landSizes.size(); i++) {
+            try {
+                double landSize = Double.parseDouble(landSizes.get(i).toString());
+
+                // Normalize land size (optional, based on dataset scale)
+                double normalizedLandSize = landSize / 1000.0;  // Example normalization (adjust as needed)
+
+                // Add the land size as training data, and the property type as label
+                trainingData.add(new double[]{normalizedLandSize});
+                labels.add(propertyType);
+            } catch (Exception e) {
+                System.err.println("Error parsing row: " + e.getMessage());
+            }
+        }
+    }
+
+    // Method to fetch land size from property tables (houses, units, townhouses)
+    private static List<Object> fetchLandSize(String tableName) {
+        // Define the columns for relevant property features
+        List<String> columns = Arrays.asList("landsize");
+
+        // Assuming the column name for land size is 'landsize'
+        List<Object> landSizes = new ArrayList<>();
+        try {
+            // Fetch the land size column for the specified table
+            landSizes = DataExploration.fetchColumn(tableName, "landsize");
+        } catch (Exception e) {
+            System.err.println("Error fetching land size from table " + tableName + ": " + e.getMessage());
+        }
+        return landSizes;
+    }
+
+    // Method to classify distance based on land size using k-NN
+    public static String classifyDistanceBasedOnLandSize(List<double[]> trainingData, List<String> labels, double[] testData, int k) {
+        // Calculate distances based on land size (the first feature)
+        List<Double> distances = new ArrayList<>();
+        for (double[] trainPoint : trainingData) {
+            distances.add(Math.abs(trainPoint[0] - testData[0]));  // Only use land size (first feature)
+        }
+
+        // Sort the distances and find the k nearest neighbors
+        List<Integer> nearestIndices = distances.stream()
+                .sorted()
+                .limit(k)
+                .map(distances::indexOf)
+                .collect(Collectors.toList());
+
+        // Get the labels of the nearest neighbors (distances)
+        List<String> nearestLabels = nearestIndices.stream()
+                .map(labels::get)
+                .collect(Collectors.toList());
+
+        // Count the frequency of each label (distance)
+        Map<String, Long> labelCounts = nearestLabels.stream()
+                .collect(Collectors.groupingBy(label -> label, Collectors.counting()));
+
+        // Return the label (distance) with the highest frequency
+        return Collections.max(labelCounts.entrySet(), Map.Entry.comparingByValue()).getKey();
+    }
+
+    // Method to fetch training data for distance classification (based on land size)
+    public static Map<String, Object> fetchDistanceTrainingData() {
+        // Fetch land sizes and distances from the tables (houses, units, townhouses)
+        List<Object> houseLandSizes = fetchLandSize("houses");
+        List<Object> unitLandSizes = fetchLandSize("units");
+        List<Object> townhouseLandSizes = fetchLandSize("townhouses");
+
+        // Fetch distances from the respective tables (houses, units, townhouses)
+        List<Object> houseDistances = fetchDistance("houses");
+        List<Object> unitDistances = fetchDistance("units");
+        List<Object> townhouseDistances = fetchDistance("townhouses");
+
+        // Combine land sizes and distances
+        List<double[]> trainingData = new ArrayList<>();
+        List<String> labels = new ArrayList<>();
+
+        // Add training data for each property type
+        addTrainingDataForDistance(houseLandSizes, houseDistances, "houses", trainingData, labels);
+        addTrainingDataForDistance(unitLandSizes, unitDistances, "units", trainingData, labels);
+        addTrainingDataForDistance(townhouseLandSizes, townhouseDistances, "townhouses", trainingData, labels);
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("trainingData", trainingData);
+        result.put("labels", labels);
+        return result;
+    }
+
+    // Method to add training data for distance classification (based on land size)
+    private static void addTrainingDataForDistance(List<Object> landSizes, List<Object> distances, String propertyType, List<double[]> trainingData, List<String> labels) {
+        for (int i = 0; i < landSizes.size() && i < distances.size(); i++) {
+            try {
+                double landSize = Double.parseDouble(landSizes.get(i).toString());
+
+                // Normalize land size (optional, based on dataset scale)
+                double normalizedLandSize = landSize / 1000.0;  // Example normalization (adjust as needed)
+
+                // Add the land size as training data, and the distance as label
+                trainingData.add(new double[]{normalizedLandSize});
+                labels.add(distances.get(i).toString());  // The distance is the label
+            } catch (Exception e) {
+                System.err.println("Error parsing row: " + e.getMessage());
+            }
+        }
+    }
+
+    // Method to fetch distance from property tables (houses, units, townhouses)
+    private static List<Object> fetchDistance(String tableName) {
+        // Fetch the distance from the specified table
+        List<Object> distances = new ArrayList<>();
+
+        try {
+            // Assuming that the column for distance is 'distance' in the table
+            distances = DataExploration.fetchColumn(tableName, "distance");
+        } catch (Exception e) {
+            System.err.println("Error fetching distance from table " + tableName + ": " + e.getMessage());
+        }
+
+        return distances;
+    }
+}
+
+
+
+
+
+
+
+IN THE MAIN CLASS : 
+
+Scanner scanner = new Scanner(System.in);
+
+// Classify region based on price
+System.out.println("Enter the price of the property to classify region:");
+double price = scanner.nextDouble();
+
+// Fetch the training data for region classification
+Map<String, Object> regionData = KNN.fetchRegionTrainingData();
+List<double[]> regionTrainingData = (List<double[]>) regionData.get("trainingData");
+List<String> regionLabels = (List<String>) regionData.get("labels");
+
+// Classify region based on price using k-NN
+double[] priceTestData = {price};  // Using price as the only feature
+System.out.println("Classified region: " + KNN.classifyRegionBasedOnPrice(regionTrainingData, regionLabels, priceTestData, 3));
+
+// Classify property type based on land size
+System.out.println("Enter the land size of the property to classify property type:");
+double landSizePropertyType = scanner.nextDouble(); // Renamed to avoid conflict
+
+// Fetch the training data for property type classification based on land size
+Map<String, Object> propertyTypeData = KNN.fetchPropertyTypeTrainingData();
+List<double[]> propertyTypeTrainingData = (List<double[]>) propertyTypeData.get("trainingData");
+List<String> propertyTypeLabels = (List<String>) propertyTypeData.get("labels");
+
+// Classify property type based on land size using k-NN
+double[] landSizePropertyTypeTestData = {landSizePropertyType};  // Using land size as the only feature
+System.out.println("Classified property type: " + KNN.classifyPropertyType(propertyTypeTrainingData, propertyTypeLabels, landSizePropertyTypeTestData, 3));
+
+// Classify distance based on land size
+System.out.println("Enter the land size of the property to classify distance:");
+double landSizeDistance = scanner.nextDouble(); // Renamed to avoid conflict
+
+// Fetch the training data for distance classification based on land size
+Map<String, Object> distanceData = KNN.fetchDistanceTrainingData();
+List<double[]> distanceTrainingData = (List<double[]>) distanceData.get("trainingData");
+List<String> distanceLabels = (List<String>) distanceData.get("labels");
+
+// Classify distance based on land size using k-NN
+double[] landSizeDistanceTestData = {landSizeDistance};  // Using land size as the only feature
+System.out.println("Classified distance: " + KNN.classifyDistanceBasedOnLandSize(distanceTrainingData, distanceLabels, landSizeDistanceTestData, 3));
+
+scanner.close();
+    }}
