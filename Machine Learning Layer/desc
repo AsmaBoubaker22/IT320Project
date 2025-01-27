@@ -11,7 +11,9 @@ IT IS FINE , YOUR PC WONT EXPLODE XD
 
 
 use this code in the main to run LINEAR REGRESSION PLEASE:--------------------------------------------------------------------
-// Create the main GUI frame
+   //LINEAR REGRESSION --------------------------------------------------------------------------
+        // Display the explanation to the user
+        // Create the main GUI frame
         JFrame frame = new JFrame("Linear Regression Model");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setSize(500, 500);
@@ -133,25 +135,80 @@ use this code in the main to run LINEAR REGRESSION PLEASE:----------------------
         frame.setVisible(true);
     }
 
-    // Method to load dummy data based on the model selection
+    // Method to load data dynamically based on the model choice
     private static List<List<Object>> loadDataForModel(int modelChoice) {
         List<List<Object>> data = new ArrayList<>();
-        switch (modelChoice) {
-            case 1: // House Price Prediction
-                data.add(Arrays.asList(3, 2, 150, 500000));
-                data.add(Arrays.asList(4, 3, 200, 600000));
-                break;
-            case 2: // Units Price Prediction (includes parking spot)
-                data.add(Arrays.asList(2, 1, 1, 100, 300000));
-                data.add(Arrays.asList(3, 2, 2, 120, 350000));
-                break;
-            case 3: // Townhouse Price Prediction
-                data.add(Arrays.asList(4, 3, 180, 550000));
-                data.add(Arrays.asList(5, 4, 220, 700000));
-                break;
-            default:
-                data.add(Arrays.asList(0, 0, 0, 0));
+        try {
+            List<Object> rooms;
+            List<Object> bathrooms;
+            List<Object> landSize;
+            List<Object> parkingSpots = new ArrayList<>();
+            List<Object> prices;
+
+            switch (modelChoice) {
+                case 1: // House Price Prediction
+                    // Fetch columns for House model
+                    rooms = DataExploration.fetchColumn("houses", "rooms");
+                    bathrooms = DataExploration.fetchColumn("houses", "bathrooms");
+                    landSize = DataExploration.fetchColumn("houses", "landsize");
+                    prices = DataExploration.fetchColumn("transactions", "price");
+
+                    // Construct the rows for House model
+                    for (int i = 0; i < rooms.size(); i++) {
+                        List<Object> row = new ArrayList<>();
+                        row.add(rooms.get(i));        // Feature 1: Rooms
+                        row.add(bathrooms.get(i));    // Feature 2: Bathrooms
+                        row.add(landSize.get(i));     // Feature 3: Land Size
+                        row.add(prices.get(i));       // Target: Price
+                        data.add(row);
+                    }
+                    break;
+
+                case 2: // Units Price Prediction
+                    // Fetch columns for Units model (with parking spots)
+                    rooms = DataExploration.fetchColumn("units", "rooms");
+                    bathrooms = DataExploration.fetchColumn("units", "bathrooms");
+                    landSize = DataExploration.fetchColumn("units", "landsize");
+                    parkingSpots = DataExploration.fetchColumn("units", "parkingSpot");
+                    prices = DataExploration.fetchColumn("transactions", "price");
+
+                    // Construct the rows for Units model
+                    for (int i = 0; i < rooms.size(); i++) {
+                        List<Object> row = new ArrayList<>();
+                        row.add(rooms.get(i));        // Feature 1: Rooms
+                        row.add(bathrooms.get(i));    // Feature 2: Bathrooms
+                        row.add(parkingSpots.get(i)); // Feature 3: Parking Spots
+                        row.add(landSize.get(i));     // Feature 4: Land Size
+                        row.add(prices.get(i));       // Target: Price
+                        data.add(row);
+                    }
+                    break;
+
+                case 3: // Townhouse Price Prediction
+                    // Fetch columns for Townhouse model
+                    rooms = DataExploration.fetchColumn("townhouses", "rooms");
+                    bathrooms = DataExploration.fetchColumn("townhouses", "bathrooms");
+                    landSize = DataExploration.fetchColumn("townhouses", "landsize");
+                    prices = DataExploration.fetchColumn("transactions", "price");
+
+                    // Construct the rows for Townhouse model
+                    for (int i = 0; i < rooms.size(); i++) {
+                        List<Object> row = new ArrayList<>();
+                        row.add(rooms.get(i));        // Feature 1: Rooms
+                        row.add(bathrooms.get(i));    // Feature 2: Bathrooms
+                        row.add(landSize.get(i));     // Feature 3: Land Size
+                        row.add(prices.get(i));       // Target: Price
+                        data.add(row);
+                    }
+                    break;
+
+                default:
+                    System.out.println("Invalid model choice.");
+            }
+        } catch (Exception e) {
+            System.err.println("Error loading data: " + e.getMessage());
         }
+
         return data;
     }
 
