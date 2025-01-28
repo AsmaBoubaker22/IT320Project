@@ -30,18 +30,19 @@ public static void generateBarChart(String tableName, String xAxis, String yAxis
 
     // Check the number of unique values for Y-axis
     boolean yAxisHasFourOrLess = uniqueYValues.size() <= 4;
+    boolean yAxisHasMoreThan1500 = uniqueYValues.size() > 1500;
 
-    // If Y-axis has more than 4 unique values, divide them into 3 ranges
+    // If Y-axis has more than 4 unique values, divide them into 5 ranges
     List<String> yAxisRanges = new ArrayList<>();
-    if (!yAxisHasFourOrLess) {
-        List<Integer> yValues = uniqueYValues.stream().map(v -> Integer.parseInt(v.toString())).sorted().toList();
-        int min = yValues.get(0);
-        int max = yValues.get(yValues.size() - 1);
+    if (!yAxisHasFourOrLess && !yAxisHasMoreThan1500) {
+        List<Double> yValues = uniqueYValues.stream().map(v -> Double.parseDouble(v.toString())).sorted().toList();
+        double min = yValues.get(0);
+        double max = yValues.get(yValues.size() - 1);
         int rangeSize = (int) Math.ceil((max - min + 1) / 5.0);
 
         for (int i = 0; i < 5; i++) {
-            int rangeStart = min + i * rangeSize;
-            int rangeEnd = Math.min(rangeStart + rangeSize - 1, max);
+            double rangeStart = min + i * rangeSize;
+            double rangeEnd = Math.min(rangeStart + rangeSize - 1, max);
 
             // Check if the range contains only one element
             if (rangeStart == rangeEnd) {
@@ -49,6 +50,16 @@ public static void generateBarChart(String tableName, String xAxis, String yAxis
             } else {
                 yAxisRanges.add(rangeStart + "-" + rangeEnd); // Regular range format
             }
+        }
+    }
+
+    // If Y-axis has more than 1500 unique values, sum Y elements based on X elements
+    Map<Object, Double> summedYValues = new LinkedHashMap<>();
+    if (yAxisHasMoreThan1500) {
+        for (int i = 0; i < xAxisData.size(); i++) {
+            Object xValue = xAxisData.get(i);
+            double yValue = Double.parseDouble(yAxisData.get(i).toString());
+            summedYValues.put(xValue, summedYValues.getOrDefault(xValue, 0.0) + yValue);
         }
     }
 
@@ -73,43 +84,48 @@ public static void generateBarChart(String tableName, String xAxis, String yAxis
         DefaultCategoryDataset dataset = new DefaultCategoryDataset();
 
         for (Object xValue : xChunk) {
-            Map<Object, Integer> yValueCounts = new LinkedHashMap<>();
-            for (int i = 0; i < xAxisData.size(); i++) {
-                if (xAxisData.get(i).equals(xValue)) {
-                    Object yValue = yAxisData.get(i);
+            if (yAxisHasMoreThan1500) {
+                // Use summed Y values for more than 1500 unique Y-axis values
+                dataset.addValue(summedYValues.getOrDefault(xValue, 0.0), yAxis, xValue.toString());
+            } else {
+                Map<Object, Integer> yValueCounts = new LinkedHashMap<>();
+                for (int i = 0; i < xAxisData.size(); i++) {
+                    if (xAxisData.get(i).equals(xValue)) {
+                        Object yValue = yAxisData.get(i);
 
-                    if (yAxisHasFourOrLess) {
-                        // Directly group by unique Y-axis values
-                        yValueCounts.put(yValue, yValueCounts.getOrDefault(yValue, 0) + 1);
-                    } else {
-                        // Group Y-axis values into ranges
-                        int y = Integer.parseInt(yValue.toString());
-                        for (String range : yAxisRanges) {
-                            String[] bounds = range.split("-");
-                            if (bounds.length == 1) {
-                                // Handle single value range (e.g., "5" instead of "5-5")
-                                int rangeValue = Integer.parseInt(bounds[0]);
-                                if (y == rangeValue) {
-                                    yValueCounts.put(range, yValueCounts.getOrDefault(range, 0) + 1);
-                                    break;
-                                }
-                            } else {
-                                // Handle regular range
-                                int rangeStart = Integer.parseInt(bounds[0]);
-                                int rangeEnd = Integer.parseInt(bounds[1]);
-                                if (y >= rangeStart && y <= rangeEnd) {
-                                    yValueCounts.put(range, yValueCounts.getOrDefault(range, 0) + 1);
-                                    break;
+                        if (yAxisHasFourOrLess) {
+                            // Directly group by unique Y-axis values
+                            yValueCounts.put(yValue, yValueCounts.getOrDefault(yValue, 0) + 1);
+                        } else {
+                            // Group Y-axis values into ranges
+                            double y = Double.parseDouble(yValue.toString());
+                            for (String range : yAxisRanges) {
+                                String[] bounds = range.split("-");
+                                if (bounds.length == 1) {
+                                    // Handle single value range (e.g., "5.0" instead of "5-5")
+                                    double rangeValue = Double.parseDouble(bounds[0]);
+                                    if (y == rangeValue) {
+                                        yValueCounts.put(range, yValueCounts.getOrDefault(range, 0) + 1);
+                                        break;
+                                    }
+                                } else {
+                                    // Handle regular range
+                                    double rangeStart = Double.parseDouble(bounds[0]);
+                                    double rangeEnd = Double.parseDouble(bounds[1]);
+                                    if (y >= rangeStart && y <= rangeEnd) {
+                                        yValueCounts.put(range, yValueCounts.getOrDefault(range, 0) + 1);
+                                        break;
+                                    }
                                 }
                             }
                         }
                     }
                 }
-            }
 
-            // Add data to the dataset
-            for (Map.Entry<Object, Integer> entry : yValueCounts.entrySet()) {
-                dataset.addValue(entry.getValue(), entry.getKey().toString(), xValue.toString());
+                // Add data to the dataset
+                for (Map.Entry<Object, Integer> entry : yValueCounts.entrySet()) {
+                    dataset.addValue(entry.getValue(), entry.getKey().toString(), xValue.toString());
+                }
             }
         }
 
@@ -140,7 +156,6 @@ public static void generateBarChart(String tableName, String xAxis, String yAxis
     mainFrame.pack();
     mainFrame.setVisible(true);
 }
-
 
 
 
@@ -274,8 +289,6 @@ public static void generatePieChart(String columnName, List<String> tables) {
         chartFrame.setVisible(true);
     });
 }
-
-
 
 
 
