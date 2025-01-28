@@ -1,0 +1,234 @@
+import javafx.application.Application;
+import javafx.geometry.Insets;
+import javafx.scene.Scene;
+import javafx.scene.chart.*;
+import javafx.scene.control.*;
+import javafx.scene.layout.*;
+import javafx.stage.Stage;
+
+import java.sql.*;
+import java.util.*;
+
+public class TestJavaFXWithDB extends Application {
+    private static final String DB_URL = "jdbc:mysql://localhost:3306/java_db";
+    private static final String DB_USER = "root";
+    private static final String DB_PASSWORD = "password"; // Replace with your MySQL password
+
+    @Override
+    public void start(Stage stage) {
+        // Root Layout
+        BorderPane root = new BorderPane();
+        root.setPadding(new Insets(10));
+
+        // Menu Bar
+        MenuBar menuBar = new MenuBar();
+        Menu fileMenu = new Menu("File");
+        MenuItem exportItem = new MenuItem("Export Report");
+        fileMenu.getItems().add(exportItem);
+        menuBar.getMenus().add(fileMenu);
+        root.setTop(menuBar);
+
+        // Chart Area
+        VBox chartArea = new VBox();
+        chartArea.setPadding(new Insets(10));
+        chartArea.setSpacing(10);
+
+        // ComboBox for Chart Selection
+        Label chartLabel = new Label("Select Chart Type:");
+        ComboBox<String> chartSelector = new ComboBox<>();
+        chartSelector.getItems().addAll("Bar Chart", "Pie Chart", "Scatter Plot");
+        chartSelector.setValue("Bar Chart");
+
+        // Dynamic Chart Placeholder
+        BorderPane chartContainer = new BorderPane();
+        chartContainer.setCenter(generateBarChart()); // Default chart
+
+        // Update Chart on Selection
+        chartSelector.setOnAction(e -> {
+            String selectedChart = chartSelector.getValue();
+            switch (selectedChart) {
+                case "Bar Chart" -> chartContainer.setCenter(generateBarChart());
+                case "Pie Chart" -> chartContainer.setCenter(generatePieChart());
+                case "Scatter Plot" -> chartContainer.setCenter(generateScatterPlot());
+            }
+        });
+
+        // Controls Layout
+        VBox controls = new VBox(10);
+        controls.setPadding(new Insets(10));
+        Label filterLabel = new Label("Filter Options:");
+        ComboBox<String> regionDropdown = new ComboBox<>();
+        regionDropdown.getItems().addAll(getRegionsFromDatabase());
+        Button filterButton = new Button("Apply Filter");
+
+        controls.getChildren().addAll(chartLabel, chartSelector, filterLabel, regionDropdown, filterButton);
+
+        // Event Handling for Filter Button
+        filterButton.setOnAction(e -> {
+            String selectedRegion = regionDropdown.getValue();
+            System.out.println("Filtering data for region: " + selectedRegion);
+            chartContainer.setCenter(generateBarChartForRegion(selectedRegion));
+        });
+
+        // Adding chart container and controls to the root layout
+        root.setLeft(controls);
+        root.setCenter(chartContainer);
+
+        exportItem.setOnAction(e -> {
+            System.out.println("Exporting Report...");
+            // Add logic to export the report
+        });
+
+        // Scene and Stage
+        Scene scene = new Scene(root, 900, 600);
+        stage.setTitle("Interactive Dashboard with Database");
+        stage.setScene(scene);
+        stage.show();
+    }
+
+    /**
+     * Generate a Bar Chart from Database
+     */
+    private BarChart<String, Number> generateBarChart() {
+        CategoryAxis xAxis = new CategoryAxis();
+        xAxis.setLabel("Region");
+
+        NumberAxis yAxis = new NumberAxis();
+        yAxis.setLabel("Property Count");
+
+        BarChart<String, Number> barChart = new BarChart<>(xAxis, yAxis);
+        barChart.setTitle("Properties by Region");
+
+        XYChart.Series<String, Number> dataSeries = new XYChart.Series<>();
+        dataSeries.setName("Properties");
+
+        try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery("SELECT regionName, COUNT(*) AS count FROM houses GROUP BY regionName")) {
+
+            while (rs.next()) {
+                String region = rs.getString("regionName");
+                int count = rs.getInt("count");
+                dataSeries.getData().add(new XYChart.Data<>(region, count));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        barChart.getData().add(dataSeries);
+        return barChart;
+    }
+
+    /**
+     * Generate a Bar Chart for a Specific Region
+     */
+    private BarChart<String, Number> generateBarChartForRegion(String region) {
+        CategoryAxis xAxis = new CategoryAxis();
+        xAxis.setLabel("Property Type");
+
+        NumberAxis yAxis = new NumberAxis();
+        yAxis.setLabel("Count");
+
+        BarChart<String, Number> barChart = new BarChart<>(xAxis, yAxis);
+        barChart.setTitle("Properties in " + region);
+
+        XYChart.Series<String, Number> dataSeries = new XYChart.Series<>();
+        dataSeries.setName(region);
+
+        try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
+             PreparedStatement pstmt = conn.prepareStatement(
+                     "SELECT hasGarden, COUNT(*) AS count FROM houses WHERE regionName = ? GROUP BY hasGarden")) {
+
+            pstmt.setString(1, region);
+            ResultSet rs = pstmt.executeQuery();
+            while (rs.next()) {
+                String garden = rs.getBoolean("hasGarden") ? "With Garden" : "Without Garden";
+                int count = rs.getInt("count");
+                dataSeries.getData().add(new XYChart.Data<>(garden, count));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        barChart.getData().add(dataSeries);
+        return barChart;
+    }
+
+    /**
+     * Generate a Pie Chart from Database
+     */
+    private PieChart generatePieChart() {
+        PieChart pieChart = new PieChart();
+        pieChart.setTitle("House Types");
+
+        try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery("SELECT hasSwimmingPool, COUNT(*) AS count FROM houses GROUP BY hasSwimmingPool")) {
+
+            while (rs.next()) {
+                String label = rs.getBoolean("hasSwimmingPool") ? "With Pool" : "Without Pool";
+                int count = rs.getInt("count");
+                pieChart.getData().add(new PieChart.Data(label, count));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return pieChart;
+    }
+
+    /**
+     * Generate a Scatter Plot from Database
+     */
+    private ScatterChart<Number, Number> generateScatterPlot() {
+        NumberAxis xAxis = new NumberAxis();
+        xAxis.setLabel("Landsize (sq.m)");
+
+        NumberAxis yAxis = new NumberAxis();
+        yAxis.setLabel("Price (Dummy Data)");
+
+        ScatterChart<Number, Number> scatterChart = new ScatterChart<>(xAxis, yAxis);
+        scatterChart.setTitle("Property Distribution");
+
+        XYChart.Series<Number, Number> series = new XYChart.Series<>();
+        series.setName("Properties");
+
+        try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery("SELECT landsize, propertyCount FROM houses")) {
+
+            while (rs.next()) {
+                int landsize = rs.getInt("landsize");
+                int propertyCount = rs.getInt("propertyCount");
+                series.getData().add(new XYChart.Data<>(landsize, propertyCount));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        scatterChart.getData().add(series);
+        return scatterChart;
+    }
+
+    /**
+     * Get regions from the database for the dropdown
+     */
+    private List<String> getRegionsFromDatabase() {
+        List<String> regions = new ArrayList<>();
+        try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery("SELECT DISTINCT regionName FROM houses")) {
+
+            while (rs.next()) {
+                regions.add(rs.getString("regionName"));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return regions;
+    }
+
+    public static void main(String[] args) {
+        launch();
+    }
+}
