@@ -145,11 +145,10 @@ public static void generateBarChart(String tableName, String xAxis, String yAxis
 
 
 public static void generatePieChart(String columnName, List<String> tables) {
-    Map<String, Map<String, Integer>> tableWiseCounts = new HashMap<>();
-    Map<String, Integer> combinedCounts = new HashMap<>();
+    Map<String, Map<Object, Integer>> tableWiseCounts = new HashMap<>();
+    Map<Object, Integer> combinedCounts = new HashMap<>();
     int tableCountWithColumn = 0;
 
-    // Iterate through tables to fetch column data and compute counts
     for (String table : tables) {
         if (doesColumnExistInTable(table, columnName)) {
             tableCountWithColumn++;
@@ -159,59 +158,75 @@ public static void generatePieChart(String columnName, List<String> tables) {
                 continue;
             }
 
-            // Sort the values in ascending order
-            columnData.sort((o1, o2) -> ((Comparable<Object>) o1).compareTo(o2));
+            // Get unique values from the column
+            Set<Object> uniqueValues = new HashSet<>(columnData);
 
-            Map<String, Integer> valueCounts = new HashMap<>();
-            
-            // Define ranges: Create 12 ranges (or change based on your needs)
-            int totalValues = columnData.size();
-            int rangeSize = totalValues / 12;  // Number of ranges (12 here, you can adjust this)
-            int remainder = totalValues % 12;  // Handle any remainder
+            Map<Object, Integer> valueCounts = new HashMap<>();
 
-            int startIdx = 0;
-            for (int i = 0; i < 12; i++) {
-                int endIdx = startIdx + rangeSize + (i < remainder ? 1 : 0) - 1;  // Adjust for remainder
-                if (i == 11) {
-                    endIdx = totalValues - 1; // Ensure last range contains all remaining values
+            // If there are more than 20 unique values, group them into ranges
+            if (uniqueValues.size() > 20) {
+                List<Object> valuesList = new ArrayList<>(uniqueValues);
+
+                // Sort the values in ascending order
+                valuesList.sort((o1, o2) -> ((Comparable<Object>) o1).compareTo(o2));
+
+                int totalValues = valuesList.size();
+                int rangeSize = totalValues / 12;  // Define the number of ranges (12 here, but you can adjust this)
+                int remainder = totalValues % 12;  // Handle any remainder
+
+                List<List<Object>> ranges = new ArrayList<>();
+                int startIdx = 0;
+
+                // Create the ranges
+                for (int i = 0; i < 12; i++) {
+                    int endIdx = startIdx + rangeSize + (i < remainder ? 1 : 0) - 1;  // Adjust for remainder
+                    if (i == 11) {
+                        endIdx = totalValues - 1; // Ensure last range covers all remaining values
+                    }
+
+                    // Add range to the list
+                    ranges.add(valuesList.subList(startIdx, endIdx + 1));
+                    startIdx = endIdx + 1;
                 }
 
-                List<Object> range = columnData.subList(startIdx, endIdx + 1);
-                String rangeLabel = range.get(0) + " - " + range.get(range.size() - 1);  // Label based on lowest and highest value in the range
-                
-                // Count how many rows fall in each range
-                for (Object value : range) {
-                    valueCounts.put(rangeLabel, valueCounts.getOrDefault(rangeLabel, 0) + 1);
-                    combinedCounts.put(rangeLabel, combinedCounts.getOrDefault(rangeLabel, 0) + 1);
+                // Count occurrences for each range
+                for (List<Object> range : ranges) {
+                    // Define the range label by the lowest and highest value in the range
+                    String rangeLabel = range.get(0) + " - " + range.get(range.size() - 1);
+                    for (Object value : range) {
+                        valueCounts.put(rangeLabel, valueCounts.getOrDefault(rangeLabel, 0) + 1);
+                        combinedCounts.put(rangeLabel, combinedCounts.getOrDefault(rangeLabel, 0) + 1);
+                    }
                 }
-
-                startIdx = endIdx + 1;  // Move the starting index for the next range
+            } else {
+                // For fewer than 20 unique values, count them directly
+                for (Object value : columnData) {
+                    valueCounts.put(value, valueCounts.getOrDefault(value, 0) + 1);
+                    combinedCounts.put(value, combinedCounts.getOrDefault(value, 0) + 1);
+                }
             }
 
             tableWiseCounts.put(table, valueCounts);
         }
     }
 
-    // Create pie charts
+    // Now create the pie chart
     JPanel chartsPanel = new JPanel();
     chartsPanel.setLayout(new GridLayout(2, 2)); // Example layout, adjust as needed
 
-    // Generate pie charts for each table
-    for (Map.Entry<String, Map<String, Integer>> entry : tableWiseCounts.entrySet()) {
+    for (Map.Entry<String, Map<Object, Integer>> entry : tableWiseCounts.entrySet()) {
         String tableName = entry.getKey();
-        Map<String, Integer> valueCounts = entry.getValue();
+        Map<Object, Integer> valueCounts = entry.getValue();
 
         DefaultPieDataset dataset = new DefaultPieDataset();
         int totalEntries = valueCounts.values().stream().mapToInt(Integer::intValue).sum();
 
-        // Add value counts to the dataset
-        for (Map.Entry<String, Integer> valueEntry : valueCounts.entrySet()) {
+        for (Map.Entry<Object, Integer> valueEntry : valueCounts.entrySet()) {
             double percentage = (valueEntry.getValue() * 100.0) / totalEntries;
             String label = valueEntry.getKey() + " (" + String.format("%.2f", percentage) + "%, " + valueEntry.getValue() + ")";
             dataset.setValue(label, valueEntry.getValue());
         }
 
-        // Create a pie chart for the table
         JFreeChart pieChart = ChartFactory.createPieChart(
                 "Pie Chart for " + columnName + " in " + tableName,
                 dataset,
@@ -225,14 +240,13 @@ public static void generatePieChart(String columnName, List<String> tables) {
         chartsPanel.add(chartPanel);
     }
 
-    // Create combined chart
+    // Combined chart
     if (tableCountWithColumn > 1) {
         DefaultPieDataset combinedDataset = new DefaultPieDataset();
 
         int totalCombinedEntries = combinedCounts.values().stream().mapToInt(Integer::intValue).sum();
 
-        // Add combined data to the pie chart
-        for (Map.Entry<String, Integer> entry : combinedCounts.entrySet()) {
+        for (Map.Entry<Object, Integer> entry : combinedCounts.entrySet()) {
             double percentage = (entry.getValue() * 100.0) / totalCombinedEntries;
             String label = entry.getKey() + " (" + String.format("%.2f", percentage) + "%, " + entry.getValue() + ")";
             combinedDataset.setValue(label, entry.getValue());
@@ -260,6 +274,7 @@ public static void generatePieChart(String columnName, List<String> tables) {
         chartFrame.setVisible(true);
     });
 }
+
 
 
 
