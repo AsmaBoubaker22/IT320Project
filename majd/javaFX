@@ -229,6 +229,6 @@ public class TestJavaFXWithDB extends Application {
     }
 
     public static void main(String[] args) {
-        launch();
+         TestJavaFXWithDB.launch(args);launch();
     }
 }
