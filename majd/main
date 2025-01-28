@@ -196,7 +196,7 @@ public class OOP {
         if (choice == 3) {  // Pie Chart option
 
     // List of available columns for Pie Chart
-    List<String> pieChartColumns = Arrays.asList("Age","CouncilArea",  "Gender", "HasElevator", "HasFence", "NumberofSharedWalls", "ParkingSpot","rooms", "underConstruction", "isLandCleared", "bathrooms","hasGarden");
+    List<String> pieChartColumns = Arrays.asList("Gender", "HasElevator", "HasFence", "NumberofSharedWalls", "ParkingSpot","rooms", "underConstruction", "isLandCleared", "bathrooms","hasGarden");
 
     System.out.println("Please choose a column for the Pie Chart:");
     for (int i = 0; i < pieChartColumns.size(); i++) {
