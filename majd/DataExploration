@@ -41,8 +41,6 @@ public abstract class DataExploration {
         System.out.println("Error retrieving column data: " + e.getMessage());
     }
 
-    // Print the fetched data for debugging purposes
-    System.out.println("Fetched Data from " + tableName + "." + columnName + ": " + columnData);
 
     return columnData;
 }
